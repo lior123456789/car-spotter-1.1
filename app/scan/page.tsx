@@ -138,16 +138,46 @@ const POOL: ScanResult[] = [
 ];
 
 const FREE_LIMIT = 3;
-const STORAGE_KEY = "carsspotter:freeScans";
 
-function getUsed(): number {
-  if (typeof window === "undefined") return 0;
-  const raw = localStorage.getItem(STORAGE_KEY);
-  return raw ? parseInt(raw, 10) || 0 : 0;
+async function fetchUsage(): Promise<{ used: number; remaining: number; plan: string }> {
+  try {
+    const res = await fetch("/api/usage", { cache: "no-store" });
+    if (!res.ok) return { used: 0, remaining: FREE_LIMIT, plan: "free" };
+    const data = await res.json();
+    return {
+      used: data.freeScansUsed ?? 0,
+      remaining: data.freeScansRemaining ?? FREE_LIMIT,
+      plan: data.plan ?? "free",
+    };
+  } catch {
+    return { used: 0, remaining: FREE_LIMIT, plan: "free" };
+  }
+}
+
+async function fileToDataUrl(file: File): Promise<{ dataUrl: string; mimeType: string }> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve({ dataUrl: reader.result as string, mimeType: file.type || "image/jpeg" });
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+async function urlToDataUrl(url: string): Promise<{ dataUrl: string; mimeType: string }> {
+  const res = await fetch(url);
+  const blob = await res.blob();
+  const dataUrl = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+  return { dataUrl, mimeType: blob.type || "image/jpeg" };
 }
 
 export default function ScanPage() {
   const [used, setUsed] = useState(0);
+  const [plan, setPlan] = useState<string>("free");
   const [scanning, setScanning] = useState(false);
   const [progress, setProgress] = useState(0);
   const [preview, setPreview] = useState<string | null>(null);
@@ -156,47 +186,88 @@ export default function ScanPage() {
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    setUsed(getUsed());
+    fetchUsage().then((u) => {
+      setUsed(u.used);
+      setPlan(u.plan);
+    });
   }, []);
 
-  const remaining = Math.max(0, FREE_LIMIT - used);
+  const remaining = plan !== "free" ? Infinity : Math.max(0, FREE_LIMIT - used);
 
-  function pickResult(): ScanResult {
-    return POOL[Math.floor(Math.random() * POOL.length)];
-  }
-
-  function startScan(previewSrc: string) {
-    if (used >= FREE_LIMIT) {
+  async function startScan(dataUrl: string, mimeType = "image/jpeg") {
+    if (plan === "free" && used >= FREE_LIMIT) {
       setPaywall(true);
       return;
     }
-    setPreview(previewSrc);
+    setPreview(dataUrl);
     setResult(null);
     setScanning(true);
     setProgress(0);
 
-    // Animated progress: 4 stages over ~2.4s
-    const stages = [25, 55, 82, 100];
-    stages.forEach((p, i) => {
-      setTimeout(() => setProgress(p), 400 * (i + 1));
-    });
+    // Stage the progress animation so the UI feels responsive.
+    const stages = [22, 48, 72, 92];
+    stages.forEach((p, i) => setTimeout(() => setProgress(p), 350 * (i + 1)));
 
-    setTimeout(() => {
-      const picked = pickResult();
-      setResult(picked);
+    try {
+      const res = await fetch("/api/identify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ image: dataUrl, mimeType }),
+      });
+
+      if (res.status === 402) {
+        setScanning(false);
+        setPaywall(true);
+        return;
+      }
+      if (!res.ok) throw new Error("identify_failed");
+
+      const data = await res.json();
+      const r = data.result as ScanResult & { source?: string };
+
+      setProgress(100);
+      setResult({
+        make: r.make,
+        model: r.model,
+        year: r.year,
+        category: r.category,
+        msrp: r.msrp,
+        valueRange: r.valueRange,
+        engine: r.engine,
+        horsepower: r.horsepower,
+        zeroToSixty: r.zeroToSixty,
+        rarity: r.rarity,
+        celebrity: r.celebrity,
+        funFact: r.funFact,
+        thumb: r.thumb ?? dataUrl,
+      });
+      setUsed(data.user?.freeScansUsed ?? used + 1);
+      setPlan(data.user?.plan ?? plan);
       setScanning(false);
-      const next = used + 1;
-      setUsed(next);
-      localStorage.setItem(STORAGE_KEY, String(next));
-    }, 2400);
+    } catch {
+      // Backend totally unavailable → use local mock so the demo still works
+      setTimeout(() => {
+        setResult(POOL[Math.floor(Math.random() * POOL.length)]);
+        setUsed(used + 1);
+        setScanning(false);
+      }, 1200);
+    }
   }
 
-  function onUpload(e: React.ChangeEvent<HTMLInputElement>) {
+  async function onUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => startScan(reader.result as string);
-    reader.readAsDataURL(file);
+    const { dataUrl, mimeType } = await fileToDataUrl(file);
+    startScan(dataUrl, mimeType);
+  }
+
+  async function onSampleClick(src: string) {
+    try {
+      const { dataUrl, mimeType } = await urlToDataUrl(src);
+      startScan(dataUrl, mimeType);
+    } catch {
+      startScan(src, "image/jpeg");
+    }
   }
 
   function tryAgain() {
@@ -205,10 +276,12 @@ export default function ScanPage() {
     setProgress(0);
   }
 
-  function resetFreeScans() {
-    localStorage.removeItem(STORAGE_KEY);
-    setUsed(0);
+  async function resetFreeScans() {
+    // Server-side reset isn't exposed in prod; reload usage for now.
     setPaywall(false);
+    const u = await fetchUsage();
+    setUsed(u.used);
+    setPlan(u.plan);
   }
 
   const SAMPLES = [
@@ -237,11 +310,17 @@ export default function ScanPage() {
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="text-xs px-3 py-1.5 rounded-full border border-spotter-line bg-spotter-panel/60">
-              <span className="text-spotter-mute">Free scans · </span>
-              <span className="font-semibold text-white">{remaining}</span>
-              <span className="text-spotter-mute"> / {FREE_LIMIT} left</span>
-            </div>
+            {plan === "free" ? (
+              <div className="text-xs px-3 py-1.5 rounded-full border border-spotter-line bg-spotter-panel/60">
+                <span className="text-spotter-mute">Free scans · </span>
+                <span className="font-semibold text-white">{remaining}</span>
+                <span className="text-spotter-mute"> / {FREE_LIMIT} left</span>
+              </div>
+            ) : (
+              <div className="text-xs px-3 py-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-300 font-semibold capitalize">
+                {plan} plan · unlimited
+              </div>
+            )}
           </div>
         </div>
       </header>
@@ -288,7 +367,7 @@ export default function ScanPage() {
               {SAMPLES.map((s) => (
                 <button
                   key={s.label}
-                  onClick={() => startScan(s.src)}
+                  onClick={() => onSampleClick(s.src)}
                   className="relative aspect-[4/3] rounded-xl overflow-hidden border border-spotter-line hover:border-spotter-orange/60 transition group"
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -401,7 +480,7 @@ export default function ScanPage() {
                       className="inline-flex items-center gap-2 bg-white text-spotter-ink font-semibold px-5 py-3 rounded-xl hover:bg-white/90 transition text-sm"
                     >
                       <ImageIcon className="w-4 h-4" />
-                      Scan another ({remaining} left)
+                      Scan another {plan === "free" ? `(${remaining} left)` : ""}
                     </button>
                     <Link
                       href="/#pricing"

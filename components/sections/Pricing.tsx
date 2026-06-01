@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Check, Sparkles, Crown, Trophy, Camera } from "lucide-react";
+import { Check, Sparkles, Crown, Trophy, Camera, Loader2 } from "lucide-react";
 import NumberFlow from "@number-flow/react";
 import { cn } from "@/lib/utils";
 
@@ -87,6 +87,38 @@ const TIERS = [
 
 export function Pricing() {
   const [isYearly, setIsYearly] = useState(false);
+  const [loadingTier, setLoadingTier] = useState<string | null>(null);
+
+  async function handleUpgrade(tier: { id: string; name: string }) {
+    if (tier.id === "free") {
+      window.location.href = "/scan";
+      return;
+    }
+    setLoadingTier(tier.id);
+    try {
+      const res = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tier: tier.id, billing: isYearly ? "yearly" : "monthly" }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.url) {
+          window.location.href = data.url;
+          return;
+        }
+      }
+      // Fallback: open mailto if Stripe isn't configured yet
+      const subject = encodeURIComponent(`Upgrade to ${tier.name}`);
+      const body = encodeURIComponent(`Hi — I'd like to upgrade to the ${tier.name} plan (${isYearly ? "yearly" : "monthly"}). Please send me the checkout link.`);
+      window.location.href = `mailto:hi@carsspotter.app?subject=${subject}&body=${body}`;
+    } catch {
+      const subject = encodeURIComponent(`Upgrade to ${tier.name}`);
+      window.location.href = `mailto:hi@carsspotter.app?subject=${subject}`;
+    } finally {
+      setLoadingTier(null);
+    }
+  }
 
   return (
     <section id="pricing" className="relative bg-spotter-ink py-24 md:py-32 px-4 overflow-hidden">
@@ -206,21 +238,19 @@ export function Pricing() {
                   <div className="h-4" />
                 )}
 
-                <a
-                  href={
-                    tier.id === "free"
-                      ? "/scan"
-                      : `mailto:hi@carsspotter.app?subject=Upgrade%20to%20${tier.name}&body=Hi%20—%20I%27d%20like%20to%20upgrade%20to%20the%20${tier.name}%20plan%20(${isYearly ? "yearly" : "monthly"}).%20Please%20send%20me%20the%20checkout%20link.`
-                  }
+                <button
+                  onClick={() => handleUpgrade({ id: tier.id, name: tier.name })}
+                  disabled={loadingTier === tier.id}
                   className={cn(
-                    "block w-full text-center py-3.5 rounded-xl font-semibold tracking-wide text-sm transition-transform active:scale-[0.98] mb-7",
+                    "w-full text-center py-3.5 rounded-xl font-semibold tracking-wide text-sm transition-transform active:scale-[0.98] mb-7 inline-flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-wait",
                     tier.popular
                       ? `bg-gradient-to-r ${tier.accent} text-white shadow-lg shadow-spotter-orange/30`
                       : "bg-white text-spotter-ink hover:bg-white/90"
                   )}
                 >
+                  {loadingTier === tier.id && <Loader2 className="w-4 h-4 animate-spin" />}
                   {tier.cta}
-                </a>
+                </button>
 
                 <ul className="space-y-2.5">
                   {tier.features.map((f) => (
