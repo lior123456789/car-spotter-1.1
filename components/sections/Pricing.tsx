@@ -1,19 +1,29 @@
 "use client";
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Check, Sparkles, Crown, Trophy } from "lucide-react";
+import { Check, Sparkles, Crown, Trophy, Camera } from "lucide-react";
 import NumberFlow from "@number-flow/react";
 import { cn } from "@/lib/utils";
 
-/**
- * Pricing math for ~$30k MRR:
- *   2,000 Spotter   × $6.99  = $13,980
- *   1,000 Collector × $14.99 = $14,990
- *      50 Concours × $29.99  =  $1,500
- *   ────────────────────────────────
- *   3,050 paid subs           = $30,470 / mo
- */
 const TIERS = [
+  {
+    id: "free",
+    name: "Free",
+    icon: Camera,
+    tagline: "Try it before you buy it",
+    monthly: 0,
+    yearly: 0,
+    cta: "Get 3 free scans",
+    accent: "from-zinc-700 to-zinc-900",
+    features: [
+      "3 free car identifications",
+      "Make, model & year",
+      "Original MSRP",
+      "Basic rarity score",
+      "Save spots to History",
+      "Upgrade anytime — no card needed",
+    ],
+  },
   {
     id: "spotter",
     name: "Spotter",
@@ -21,7 +31,7 @@ const TIERS = [
     tagline: "For the weekend car-spotter",
     monthly: 6.99,
     yearly: 59,
-    cta: "Start free",
+    cta: "Go Spotter",
     accent: "from-zinc-700 to-zinc-900",
     features: [
       "50 identifications per day",
@@ -139,7 +149,7 @@ export function Pricing() {
           </div>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-5">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5">
           {TIERS.map((tier, i) => {
             const Icon = tier.icon;
             return (
@@ -169,20 +179,32 @@ export function Pricing() {
                 <p className="text-xs text-spotter-mute mb-6">{tier.tagline}</p>
 
                 <div className="flex items-baseline mb-1">
-                  <span className="text-5xl font-semibold">$</span>
-                  <NumberFlow
-                    value={isYearly ? tier.yearly : tier.monthly}
-                    className="text-5xl font-semibold"
-                    format={{ minimumFractionDigits: 2 }}
-                  />
-                  <span className="text-spotter-mute ml-1.5">/{isYearly ? "yr" : "mo"}</span>
+                  {tier.monthly === 0 ? (
+                    <>
+                      <span className="text-5xl font-semibold">$0</span>
+                      <span className="text-spotter-mute ml-1.5">forever</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-5xl font-semibold">$</span>
+                      <NumberFlow
+                        value={isYearly ? tier.yearly : tier.monthly}
+                        className="text-5xl font-semibold"
+                        format={{ minimumFractionDigits: 2 }}
+                      />
+                      <span className="text-spotter-mute ml-1.5">/{isYearly ? "yr" : "mo"}</span>
+                    </>
+                  )}
                 </div>
-                {isYearly && (
+                {tier.monthly === 0 ? (
+                  <p className="text-xs text-emerald-400 mb-4">No credit card required</p>
+                ) : isYearly ? (
                   <p className="text-xs text-emerald-400 mb-4">
                     Just ${(tier.yearly / 12).toFixed(2)}/mo billed annually
                   </p>
+                ) : (
+                  <div className="h-4" />
                 )}
-                {!isYearly && <div className="h-4" />}
 
                 <button
                   className={cn(

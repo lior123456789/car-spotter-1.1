@@ -5,6 +5,7 @@ import { Spotlight } from "@/components/ui/spotlight";
 import { VerticalCutReveal } from "@/components/ui/vertical-cut-reveal";
 import { ContainerScroll } from "@/components/ui/container-scroll-animation";
 import { Features } from "@/components/sections/Features";
+import { SpotMap } from "@/components/sections/SpotMap";
 import { Pricing } from "@/components/sections/Pricing";
 import { FAQ } from "@/components/sections/FAQ";
 
@@ -22,7 +23,9 @@ export default function Page() {
           </a>
           <nav className="hidden md:flex items-center gap-7 text-sm text-zinc-300">
             <a href="#features" className="hover:text-white transition-colors">Features</a>
+            <a href="#spotmap"  className="hover:text-white transition-colors">Spot Map</a>
             <a href="#pricing"  className="hover:text-white transition-colors">Pricing</a>
+            <a href="/dashboard" className="hover:text-white transition-colors">Dashboard</a>
             <a href="#faq"      className="hover:text-white transition-colors">FAQ</a>
           </nav>
           <a
@@ -197,6 +200,7 @@ export default function Page() {
       </section>
 
       <Features />
+      <SpotMap />
       <Pricing />
       <FAQ />
 
