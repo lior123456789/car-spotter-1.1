@@ -88,18 +88,18 @@ export default function Page() {
             className="flex flex-wrap items-center justify-center gap-3"
           >
             <a
-              href="#pricing"
+              href="/scan"
               className="inline-flex items-center gap-2 bg-gradient-to-r from-spotter-orange to-spotter-red text-white font-semibold px-6 py-3.5 rounded-xl shadow-xl shadow-spotter-orange/30 hover:brightness-110 transition"
             >
-              <Apple className="w-5 h-5" />
-              Download for iPhone
+              <SparklesIcon className="w-5 h-5" />
+              Try free — 3 scans
             </a>
             <a
               href="#pricing"
               className="inline-flex items-center gap-2 bg-white/5 border border-spotter-line text-white font-semibold px-6 py-3.5 rounded-xl hover:bg-white/10 transition"
             >
-              <Smartphone className="w-5 h-5" />
-              Get it on Android
+              <Apple className="w-5 h-5" />
+              See plans
             </a>
           </motion.div>
 

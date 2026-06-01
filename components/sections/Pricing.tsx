@@ -206,16 +206,21 @@ export function Pricing() {
                   <div className="h-4" />
                 )}
 
-                <button
+                <a
+                  href={
+                    tier.id === "free"
+                      ? "/scan"
+                      : `mailto:hi@carsspotter.app?subject=Upgrade%20to%20${tier.name}&body=Hi%20—%20I%27d%20like%20to%20upgrade%20to%20the%20${tier.name}%20plan%20(${isYearly ? "yearly" : "monthly"}).%20Please%20send%20me%20the%20checkout%20link.`
+                  }
                   className={cn(
-                    "w-full py-3.5 rounded-xl font-semibold tracking-wide text-sm transition-transform active:scale-[0.98] mb-7",
+                    "block w-full text-center py-3.5 rounded-xl font-semibold tracking-wide text-sm transition-transform active:scale-[0.98] mb-7",
                     tier.popular
                       ? `bg-gradient-to-r ${tier.accent} text-white shadow-lg shadow-spotter-orange/30`
                       : "bg-white text-spotter-ink hover:bg-white/90"
                   )}
                 >
                   {tier.cta}
-                </button>
+                </a>
 
                 <ul className="space-y-2.5">
                   {tier.features.map((f) => (
