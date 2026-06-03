@@ -39,7 +39,9 @@ function mock(): IdentifyResult {
 const SYSTEM_PROMPT = `You are CarSpotter — an expert automotive identification engine.
 
 When given a photo of a car, return ONLY a valid JSON object (no prose, no
-markdown fences) matching this exact shape:
+markdown fences) matching this exact shape. Fill EVERY field with real,
+researched data from your knowledge — production figures, auction sales,
+celebrity ownership, technical specs. Be specific.
 
 {
   "make": string,
@@ -47,15 +49,34 @@ markdown fences) matching this exact shape:
   "year": string,           // e.g. "2020–2023" or "1995"
   "category": "Supercar" | "Hypercar" | "Classic" | "Daily" | "JDM" | "Muscle" | "Luxury" | "SUV" | "Truck",
   "msrp": string,           // "$507,000" or "$56,000 (original)"
-  "valueRange": string,     // "$550k – $750k"
+  "valueRange": string,     // "$550k – $750k" — realistic current market
   "engine": string,         // "4.0L Twin-Turbo V8 PHEV"
   "horsepower": string,     // "986 hp"
+  "torque": string,         // "590 lb-ft"
   "zeroToSixty": string,    // "2.5 s"
+  "topSpeed": string,       // "211 mph"
+  "weight": string,         // "3,461 lbs"
+  "drivetrain": string,     // "AWD" | "RWD" | "FWD"
+  "transmission": string,   // "8-speed F1 DCT"
+  "productionCount": number | null, // exact total if known
   "rarity": number,         // 0–10
-  "celebrity": string | null,
-  "funFact": string,        // one sentence, ≤180 chars
+  "celebrity": string | null, // documented owner if known
+  "funFact": string,        // 1-2 sentences, surprising, factual
+  "recentSale": { "auction": string, "date": string, "price": number } | null,
+  "recalls": number | null,
+  "wiki": string,           // 2-3 sentence deep-dive paragraph
   "confidence": number      // 0–1
 }
+
+Rules:
+- Never invent specs. If you genuinely don't know a value, return null
+  for that field (don't make up numbers).
+- For wiki: include the most interesting non-obvious thing about this
+  specific car — engineering story, racing history, design lore.
+- For valueRange: use the most recent auction comp you actually know
+  about. Older data is fine if labeled with the year.
+- Match year/generation precisely from visual cues (headlight shape,
+  bumper, badges, wheel style, body lines).
 
 If the image does not contain an identifiable car, return:
 { "error": "no_car_detected" }
@@ -120,8 +141,19 @@ export async function identifyCar(imageBase64: string, mimeType = "image/jpeg"):
       celebrity: parsed.celebrity ? String(parsed.celebrity) : undefined,
       funFact: String(parsed.funFact ?? ""),
       confidence: typeof parsed.confidence === "number" ? parsed.confidence : 0.9,
+      // Pass through the extra rich fields so /api/car-info can return them
+      // verbatim without enrich() needing a hardcoded fallback table.
+      torque: parsed.torque ? String(parsed.torque) : undefined,
+      topSpeed: parsed.topSpeed ? String(parsed.topSpeed) : undefined,
+      weight: parsed.weight ? String(parsed.weight) : undefined,
+      drivetrain: parsed.drivetrain ? String(parsed.drivetrain) : undefined,
+      transmission: parsed.transmission ? String(parsed.transmission) : undefined,
+      productionCount: typeof parsed.productionCount === "number" ? parsed.productionCount : undefined,
+      recentSale: parsed.recentSale && typeof parsed.recentSale === "object" ? parsed.recentSale : undefined,
+      recalls: typeof parsed.recalls === "number" ? parsed.recalls : undefined,
+      wiki: parsed.wiki ? String(parsed.wiki) : undefined,
       source: "claude",
-    };
+    } as any;
   } catch (err) {
     console.error("[identifyCar] Claude call failed, falling back to mock:", err);
     return mock();

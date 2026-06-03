@@ -42,6 +42,8 @@ export type EnrichedCarInfo = {
   wiki?: string;
 };
 
+// DEPRECATED: Kept only as offline fallback when ANTHROPIC_API_KEY is missing.
+// Production enrichment is done entirely by Claude (see lib/identify.ts).
 const FACTS: Record<string, Partial<EnrichedCarInfo>> = {
   "ferrari sf90 stradale": {
     productionCount: undefined, // production model, ongoing
@@ -157,6 +159,11 @@ function parseMoneyShort(s: string): number {
   return Math.round(n);
 }
 
+/**
+ * Merge Claude's vision response with offline FACTS table (only used when
+ * Claude wasn't reached). When Claude IS reached, it returns all rich
+ * fields directly — enrich just passes them through.
+ */
 export function enrich(base: {
   make: string;
   model: string;
@@ -171,6 +178,16 @@ export function enrich(base: {
   celebrity?: string;
   funFact: string;
   thumb?: string;
+  // Claude-provided enrichment passed through directly when available
+  torque?: string;
+  topSpeed?: string;
+  weight?: string;
+  drivetrain?: string;
+  transmission?: string;
+  productionCount?: number;
+  recentSale?: { auction: string; date: string; price: number };
+  recalls?: number;
+  wiki?: string;
 }): EnrichedCarInfo {
   const k = key(base.make, base.model);
   // Try exact match first, then partial (model contains words)
@@ -189,12 +206,15 @@ export function enrich(base: {
     return [parseMoneyShort(parts[0] ?? ""), parseMoneyShort(parts[1] ?? parts[0] ?? "")];
   })();
 
+  // Prefer Claude's data (in `base`). Fall back to FACTS only if Claude
+  // didn't return that field — this is what keeps the table from
+  // overriding live vision data.
   return {
+    ...(facts ?? {}),
     ...base,
     valueRangeLow: low,
     valueRangeHigh: high,
-    ...(facts ?? {}),
-  };
+  } as EnrichedCarInfo;
 }
 
 export { FACTS };

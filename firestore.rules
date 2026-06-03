@@ -1,0 +1,55 @@
+// CarSpotter Firestore Security Rules
+//
+// Paste into Firebase Console → Firestore Database → Rules tab → Publish.
+// These rules require sign-in for all writes and scope every user to
+// only their own data.
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── /users/{uid} — profile + plan ──
+    match /users/{uid} {
+      // Anyone signed-in can read their own profile.
+      allow read: if request.auth != null && request.auth.uid == uid;
+      // Only the owner can create/update their profile.
+      // The "plan" field can only be set to: free, spotter, collector, concours.
+      allow create, update: if request.auth != null
+        && request.auth.uid == uid
+        && (!('plan' in request.resource.data)
+            || request.resource.data.plan in ['free', 'spotter', 'collector', 'concours']);
+      // No client-side deletes.
+      allow delete: if false;
+    }
+
+    // ── /scans/{scanId} — identified cars ──
+    match /scans/{scanId} {
+      // Read: only the owner.
+      allow read: if request.auth != null
+        && resource.data.userId == request.auth.uid;
+      // Create: must be signed-in, must set userId to themselves.
+      allow create: if request.auth != null
+        && request.resource.data.userId == request.auth.uid;
+      // Update / delete: only the owner.
+      allow update, delete: if request.auth != null
+        && resource.data.userId == request.auth.uid;
+    }
+
+    // ── /spots/{spotId} — community-contributed locations ──
+    // Anyone signed in can read. Submissions write to /spotSubmissions
+    // for admin review (not yet wired in code).
+    match /spots/{spotId} {
+      allow read: if request.auth != null;
+      allow write: if false; // admin-only via service account
+    }
+
+    match /spotSubmissions/{subId} {
+      allow read: if request.auth != null
+        && resource.data.userId == request.auth.uid;
+      allow create: if request.auth != null
+        && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if false;
+    }
+  }
+}

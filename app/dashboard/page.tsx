@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
@@ -15,6 +16,7 @@ import {
   Activity,
 } from "lucide-react";
 import { SCANS, USAGE, aggregateStats } from "@/lib/data";
+import { PostCheckoutSync } from "@/components/PostCheckoutSync";
 
 const stats = aggregateStats();
 
@@ -33,6 +35,9 @@ export default function DashboardPage() {
 
   return (
     <main className="min-h-screen bg-spotter-ink text-white">
+      <Suspense fallback={null}>
+        <PostCheckoutSync />
+      </Suspense>
       {/* ── Top bar ── */}
       <header className="sticky top-0 z-40 backdrop-blur-md bg-spotter-ink/80 border-b border-spotter-line">
         <div className="max-w-7xl mx-auto px-5 h-16 flex items-center justify-between">

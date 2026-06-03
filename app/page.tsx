@@ -9,6 +9,7 @@ import { Features } from "@/components/sections/Features";
 import { SpotMap } from "@/components/sections/SpotMap";
 import { Pricing } from "@/components/sections/Pricing";
 import { FAQ } from "@/components/sections/FAQ";
+import { DailyChallenge } from "@/components/sections/DailyChallenge";
 
 export default function Page() {
   return (
@@ -214,8 +215,9 @@ export default function Page() {
       </section>
 
       <Features />
-      <SpotMap />
+      <DailyChallenge />
       <Pricing />
+      <SpotMap />
       <FAQ />
 
       {/* ─────────── CTA + footer ─────────── */}
