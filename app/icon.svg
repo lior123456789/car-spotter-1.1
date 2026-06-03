@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#22D3EE"/>
+      <stop offset="1" stop-color="#A855F7"/>
+    </linearGradient>
+  </defs>
+  <rect width="32" height="32" rx="8" fill="#05050B"/>
+  <rect x="1" y="1" width="30" height="30" rx="7" stroke="url(#g)" stroke-width="1.5" fill="none"/>
+  <!-- camera body -->
+  <path d="M9 11.5h3.2l1.4-1.7h4.8l1.4 1.7H23a1 1 0 0 1 1 1V21a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1v-8.5a1 1 0 0 1 1-1z" fill="url(#g)" opacity="0.18"/>
+  <path d="M9 11.5h3.2l1.4-1.7h4.8l1.4 1.7H23a1 1 0 0 1 1 1V21a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1v-8.5a1 1 0 0 1 1-1z" stroke="url(#g)" stroke-width="1.6" fill="none" stroke-linejoin="round"/>
+  <!-- target ring (= identification) -->
+  <circle cx="16" cy="16.5" r="3.4" stroke="url(#g)" stroke-width="1.6" fill="none"/>
+  <circle cx="16" cy="16.5" r="1.2" fill="url(#g)"/>
+</svg>

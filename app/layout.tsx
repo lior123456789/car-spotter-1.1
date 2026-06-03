@@ -6,6 +6,7 @@ import { AuthProvider } from "@/components/AuthProvider";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://carsspotter.com"),
   title: "CarSpotter — Snap any car. Know everything.",
   description:
     "Point your phone at any car. Our AI tells you the make, model, year, original price, current value, rarity, celebrity owners, even the engine sound. Free to start.",
@@ -13,8 +14,13 @@ export const metadata: Metadata = {
     title: "CarSpotter — Snap any car. Know everything.",
     description: "AI car identifier. 500,000+ models. Engine sounds. Market value. Built on Claude.",
     type: "website",
+    url: "https://carsspotter.com",
   },
   twitter: { card: "summary_large_image" },
+  icons: {
+    icon: "/icon.svg",
+    apple: "/apple-icon.svg",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
