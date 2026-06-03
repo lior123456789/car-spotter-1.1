@@ -168,6 +168,61 @@ async function fileToDataUrl(file: File): Promise<{ dataUrl: string; mimeType: s
   });
 }
 
+/**
+ * Quality-preserving image optimizer.
+ *   - Reads any image (JPEG / PNG / HEIC / WebP)
+ *   - Downsizes ONLY if max dimension > 2048px (so phone-camera photos
+ *     don't blow Claude's image limit), preserving aspect ratio
+ *   - Re-encodes as JPEG at 0.92 quality (visually lossless)
+ *   - Returns a high-quality data URL ready for both preview and API
+ */
+async function optimizeImage(file: File): Promise<{ dataUrl: string; mimeType: string }> {
+  const originalDataUrl = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+
+  // Skip resize if file is already small + visually sharp
+  const MAX_DIM = 2048;
+  const TARGET_QUALITY = 0.92;
+
+  try {
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const el = new Image();
+      el.onload = () => resolve(el);
+      el.onerror = reject;
+      el.src = originalDataUrl;
+    });
+
+    const { width: w, height: h } = img;
+    const maxDim = Math.max(w, h);
+
+    // Small file + small enough: just return original
+    if (maxDim <= MAX_DIM && file.size <= 5 * 1024 * 1024) {
+      return { dataUrl: originalDataUrl, mimeType: file.type || "image/jpeg" };
+    }
+
+    const scale = maxDim > MAX_DIM ? MAX_DIM / maxDim : 1;
+    const newW = Math.round(w * scale);
+    const newH = Math.round(h * scale);
+
+    const canvas = document.createElement("canvas");
+    canvas.width = newW;
+    canvas.height = newH;
+    const ctx = canvas.getContext("2d")!;
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(img, 0, 0, newW, newH);
+
+    const dataUrl = canvas.toDataURL("image/jpeg", TARGET_QUALITY);
+    return { dataUrl, mimeType: "image/jpeg" };
+  } catch {
+    return { dataUrl: originalDataUrl, mimeType: file.type || "image/jpeg" };
+  }
+}
+
 async function urlToDataUrl(url: string): Promise<{ dataUrl: string; mimeType: string }> {
   const res = await fetch(url);
   const blob = await res.blob();
@@ -273,11 +328,32 @@ export default function ScanPage() {
     }
   }
 
-  async function onUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
+  const [dragOver, setDragOver] = useState(false);
+
+  async function handleFiles(files: FileList | File[] | null) {
+    if (!files || files.length === 0) return;
+    const file = Array.from(files).find((f) => f.type.startsWith("image/"));
     if (!file) return;
-    const { dataUrl, mimeType } = await fileToDataUrl(file);
+    const { dataUrl, mimeType } = await optimizeImage(file);
     startScan(dataUrl, mimeType);
+  }
+
+  async function onUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    handleFiles(e.target.files);
+  }
+
+  function onDragOver(e: React.DragEvent) {
+    e.preventDefault();
+    setDragOver(true);
+  }
+  function onDragLeave(e: React.DragEvent) {
+    e.preventDefault();
+    setDragOver(false);
+  }
+  function onDrop(e: React.DragEvent) {
+    e.preventDefault();
+    setDragOver(false);
+    handleFiles(e.dataTransfer?.files ?? null);
   }
 
   async function onSampleClick(src: string) {
@@ -303,11 +379,14 @@ export default function ScanPage() {
     setPlan(u.plan);
   }
 
+  // Verified-online Unsplash photos. Labels are intentionally generic so
+  // Claude's identification (which runs on the actual pixels) decides the
+  // exact make/model — these are just thumbnails for the user to click.
   const SAMPLES = [
-    { label: "Ferrari SF90",       src: "https://images.unsplash.com/photo-1583121274602-3e2820c69888?w=800&q=80" },
-    { label: "Porsche GT3 RS",     src: "https://images.unsplash.com/photo-1611821064430-0d40291922d2?w=800&q=80" },
-    { label: "Lamborghini Huracán",src: "https://images.unsplash.com/photo-1544636331-e26879cd4d9b?w=800&q=80" },
-    { label: "Nissan R34 GT-R",    src: "https://images.unsplash.com/photo-1626668893632-6f3a4466d22f?w=800&q=80" },
+    { label: "Ferrari",     src: "https://images.unsplash.com/photo-1583121274602-3e2820c69888?w=1200&q=90&auto=format" },
+    { label: "Lamborghini", src: "https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=1200&q=90&auto=format" },
+    { label: "Porsche 911", src: "https://images.unsplash.com/photo-1607853554439-0069ec0f29b6?w=1200&q=90&auto=format" },
+    { label: "Mercedes-AMG",src: "https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=1200&q=90&auto=format" },
   ];
 
   return (
@@ -374,17 +453,39 @@ export default function ScanPage() {
               </p>
             </div>
 
-            <motion.label
+            <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              htmlFor="upload"
-              className="block max-w-2xl mx-auto cursor-pointer rounded-2xl border-2 border-dashed border-spotter-line bg-spotter-panel/40 hover:border-spotter-orange/60 hover:bg-spotter-panel/60 transition p-10 text-center"
+              onDragOver={onDragOver}
+              onDragLeave={onDragLeave}
+              onDrop={onDrop}
+              onClick={() => fileRef.current?.click()}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") fileRef.current?.click(); }}
+              className={
+                "block max-w-2xl mx-auto cursor-pointer rounded-2xl border-2 border-dashed transition p-10 text-center " +
+                (dragOver
+                  ? "border-spotter-cyan bg-spotter-cyan/10 scale-[1.01]"
+                  : "border-spotter-line bg-spotter-panel/40 hover:border-spotter-cyan/60 hover:bg-spotter-panel/60")
+              }
             >
-              <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-gradient-to-br from-spotter-orange to-spotter-red grid place-items-center">
-                <Upload className="w-6 h-6 text-white" />
+              <div
+                className={
+                  "w-16 h-16 mx-auto mb-4 rounded-full grid place-items-center transition " +
+                  (dragOver
+                    ? "bg-gradient-to-br from-spotter-cyan to-spotter-violet scale-110"
+                    : "bg-gradient-to-br from-spotter-cyan to-spotter-violet")
+                }
+              >
+                <Upload className="w-7 h-7 text-white" />
               </div>
-              <div className="text-lg font-semibold mb-1">Upload a car photo</div>
-              <div className="text-sm text-spotter-mute">JPG, PNG or HEIC up to 10MB</div>
+              <div className="text-lg font-semibold mb-1">
+                {dragOver ? "Drop to scan" : "Drop a photo or click to upload"}
+              </div>
+              <div className="text-sm text-spotter-mute">
+                JPG, PNG, HEIC, WebP · auto-optimized to 2048px / high quality
+              </div>
               <input
                 id="upload"
                 ref={fileRef}
@@ -393,7 +494,7 @@ export default function ScanPage() {
                 onChange={onUpload}
                 className="hidden"
               />
-            </motion.label>
+            </motion.div>
 
             <div className="text-center text-xs text-spotter-mute mt-6 mb-4 uppercase tracking-widest">
               or try a sample
