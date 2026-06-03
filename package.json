@@ -5,9 +5,10 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
+    "start": "next start -p ${PORT:-3000}",
     "lint": "next lint"
   },
+  "engines": { "node": ">=18.17.0" },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.32.1",
     "@number-flow/react": "^0.5.10",

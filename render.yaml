@@ -1,0 +1,57 @@
+services:
+  - type: web
+    name: carsspotter
+    runtime: node
+    plan: starter        # bump to standard once traffic ramps; free will sleep
+    region: oregon
+    buildCommand: npm install --legacy-peer-deps && npm run build
+    startCommand: npm start
+    autoDeploy: true
+    healthCheckPath: /
+    envVars:
+      - key: NODE_VERSION
+        value: 20.11.0
+
+      # ── AI ──
+      - key: ANTHROPIC_API_KEY
+        sync: false
+
+      # ── Firebase (client-safe, baked into bundle) ──
+      - key: NEXT_PUBLIC_FIREBASE_API_KEY
+        value: AIzaSyDU0D-rBlKgvvPmyjuZBhMc-4cMntOHuBc
+      - key: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+        value: carspotter-c0863.firebaseapp.com
+      - key: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+        value: carspotter-c0863
+      - key: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+        value: carspotter-c0863.firebasestorage.app
+      - key: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+        value: "647314746037"
+      - key: NEXT_PUBLIC_FIREBASE_APP_ID
+        value: 1:647314746037:web:8413de7471a8f0541cecfc
+
+      # ── Stripe (live billing) ──
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: STRIPE_PRICE_SPOTTER_MONTHLY
+        value: price_1TeMbdFkhv4xKB8BLiEc7yGx
+      - key: STRIPE_PRICE_SPOTTER_YEARLY
+        value: price_1TeMbeFkhv4xKB8BzCQyWRxY
+      - key: STRIPE_PRICE_COLLECTOR_MONTHLY
+        value: price_1TeMbeFkhv4xKB8Bdj0tQfqP
+      - key: STRIPE_PRICE_COLLECTOR_YEARLY
+        value: price_1TeMbeFkhv4xKB8BTaKVzzVx
+      - key: STRIPE_PRICE_CONCOURS_MONTHLY
+        value: price_1TeMbfFkhv4xKB8BQeQ6Hyii
+      - key: STRIPE_PRICE_CONCOURS_YEARLY
+        value: price_1TeMbfFkhv4xKB8Br6yjfDPp
+
+      # ── Upstash Redis (storage — create at upstash.com, paste here) ──
+      - key: UPSTASH_REDIS_REST_URL
+        sync: false
+      - key: UPSTASH_REDIS_REST_TOKEN
+        sync: false
