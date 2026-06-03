@@ -26,6 +26,8 @@ import {
   signOut as fbSignOut,
   GoogleAuthProvider,
   signInWithPopup,
+  setPersistence,
+  browserLocalPersistence,
   type User,
 } from "firebase/auth";
 import {
@@ -68,7 +70,14 @@ function getApp(): FirebaseApp | null {
 
 export function auth() {
   const a = getApp();
-  return a ? getAuth(a) : null;
+  if (!a) return null;
+  const authInstance = getAuth(a);
+  // Persist sign-in across browser sessions / tab navigations so the
+  // user doesn't get logged out when they leave /dashboard and return.
+  if (typeof window !== "undefined") {
+    setPersistence(authInstance, browserLocalPersistence).catch(() => {});
+  }
+  return authInstance;
 }
 
 export function db() {

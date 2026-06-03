@@ -10,6 +10,7 @@ import { SpotMap } from "@/components/sections/SpotMap";
 import { Pricing } from "@/components/sections/Pricing";
 import { FAQ } from "@/components/sections/FAQ";
 import { DailyChallenge } from "@/components/sections/DailyChallenge";
+import { useAuth } from "@/components/AuthProvider";
 
 export default function Page() {
   return (
@@ -30,21 +31,7 @@ export default function Page() {
             <a href="/dashboard" className="hover:text-white transition-colors">Dashboard</a>
             <a href="#faq"      className="hover:text-white transition-colors">FAQ</a>
           </nav>
-          <div className="flex items-center gap-2">
-            <a
-              href="/signin"
-              className="hidden md:inline-flex items-center gap-1 text-sm text-zinc-300 hover:text-white px-3 py-2 transition"
-            >
-              Sign in
-            </a>
-            <a
-              href="/scan"
-              className="inline-flex items-center gap-1 bg-gradient-to-r from-spotter-cyan to-spotter-violet text-white text-sm font-semibold px-4 py-2 rounded-lg shadow-lg shadow-spotter-cyan/20 hover:brightness-110 transition"
-            >
-              Start free
-              <ArrowRight className="w-4 h-4" />
-            </a>
-          </div>
+          <NavAuthControls />
         </div>
       </header>
 
@@ -251,6 +238,60 @@ export default function Page() {
         <p>© 2026 CarSpotter. Made by people who once stood on a curb arguing whether a 911 was a 996.2 or a 997.1.</p>
       </footer>
     </main>
+  );
+}
+
+function NavAuthControls() {
+  const { user, loading, logout } = useAuth();
+
+  if (loading) {
+    return <div className="w-24 h-9" />;
+  }
+
+  if (user) {
+    const initial = (user.displayName ?? user.email ?? "U").charAt(0).toUpperCase();
+    return (
+      <div className="flex items-center gap-2">
+        <a
+          href="/dashboard"
+          className="hidden md:inline-flex items-center gap-1 text-sm text-zinc-300 hover:text-white px-3 py-2 transition"
+        >
+          Dashboard
+        </a>
+        <a
+          href="/scan"
+          className="inline-flex items-center gap-1 bg-gradient-to-r from-spotter-cyan to-spotter-violet text-white text-sm font-semibold px-4 py-2 rounded-lg shadow-lg shadow-spotter-cyan/20 hover:brightness-110 transition"
+        >
+          Scan
+          <ArrowRight className="w-4 h-4" />
+        </a>
+        <a
+          href="/dashboard"
+          title={user.email ?? "Account"}
+          className="w-9 h-9 rounded-full bg-gradient-to-br from-spotter-cyan to-spotter-violet grid place-items-center text-white text-sm font-bold hover:brightness-110 transition"
+        >
+          {initial}
+        </a>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      <a
+        href="/signin"
+        className="hidden md:inline-flex items-center gap-1 text-sm text-zinc-300 hover:text-white px-3 py-2 transition"
+      >
+        Sign in
+      </a>
+      <a
+        href="/scan"
+        className="inline-flex items-center gap-1 bg-gradient-to-r from-spotter-cyan to-spotter-violet text-white text-sm font-semibold px-4 py-2 rounded-lg shadow-lg shadow-spotter-cyan/20 hover:brightness-110 transition"
+      >
+        Start free
+        <ArrowRight className="w-4 h-4" />
+      </a>
+    </div>
   );
 }
 
