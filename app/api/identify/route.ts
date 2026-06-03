@@ -6,6 +6,13 @@ import { identifyCar } from "@/lib/identify";
 export const dynamic = "force-dynamic";
 export const maxDuration = 30; // seconds — Claude vision can take 10s+
 
+/** Bypass paywall on localhost so dev/demo can use every feature freely. */
+function isLocalhost(req: NextRequest): boolean {
+  if (process.env.NODE_ENV === "development") return true;
+  const host = req.headers.get("host") ?? "";
+  return host.startsWith("localhost") || host.startsWith("127.0.0.1") || host.startsWith("0.0.0.0");
+}
+
 type Body = { image?: string; mimeType?: string };
 
 function ulid() {
@@ -35,8 +42,10 @@ export async function POST(req: NextRequest) {
 
   const userId = getOrCreateUserId();
   const user = await getUser(userId);
+  const localhost = isLocalhost(req);
 
-  if (!isPaid(user) && user.freeScansUsed >= FREE_LIMIT) {
+  // On localhost, every feature is unlocked — no paywall, unlimited scans.
+  if (!localhost && !isPaid(user) && user.freeScansUsed >= FREE_LIMIT) {
     return NextResponse.json(
       {
         error: "paywall",
@@ -69,17 +78,20 @@ export async function POST(req: NextRequest) {
   });
 
   let updated = user;
-  if (!isPaid(user)) {
+  // On localhost we don't burn free scans — count stays at 0.
+  if (!localhost && !isPaid(user)) {
     updated = await bumpFreeScans(userId);
   }
 
   return NextResponse.json({
     result,
     user: {
-      plan: updated.plan,
-      freeScansUsed: updated.freeScansUsed,
-      freeScansRemaining: Math.max(0, FREE_LIMIT - updated.freeScansUsed),
+      plan: localhost ? "concours" : updated.plan,        // localhost simulates top tier
+      freeScansUsed: localhost ? 0 : updated.freeScansUsed,
+      freeScansRemaining: localhost ? Infinity : Math.max(0, FREE_LIMIT - updated.freeScansUsed),
       freeLimit: FREE_LIMIT,
+      localhost,
+      claudeEnabled: !!process.env.ANTHROPIC_API_KEY,
     },
   });
 }

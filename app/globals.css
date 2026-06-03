@@ -16,10 +16,10 @@ html, body {
   text-rendering: optimizeLegibility;
   scroll-behavior: smooth;
 }
-::selection { background: rgba(255, 122, 46, 0.25); }
+::selection { background: rgba(34, 211, 238, 0.30); }
 
 .gradient-text {
-  background: linear-gradient(135deg, #FF7A2E 0%, #FF3D5A 100%);
+  background: linear-gradient(135deg, #22D3EE 0%, #A855F7 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -28,8 +28,23 @@ html, body {
 .shimmer-border {
   background:
     linear-gradient(rgb(var(--background)), rgb(var(--background))) padding-box,
-    linear-gradient(120deg, transparent 30%, rgba(255,122,46,.6) 50%, transparent 70%) border-box;
+    linear-gradient(120deg, transparent 30%, rgba(34,211,238,.6) 50%, transparent 70%) border-box;
   background-size: 200% 100%;
   border: 1px solid transparent;
   animation: shimmer 2.5s linear infinite;
+}
+
+/* Hero shader background — places it behind everything, dims to make text readable */
+.shader-hero-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+.shader-hero-bg::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 50%, rgba(5,5,11,0.55), rgba(5,5,11,0.85));
+  pointer-events: none;
 }

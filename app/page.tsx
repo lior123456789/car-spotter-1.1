@@ -4,6 +4,7 @@ import { Camera, ArrowRight, Sparkles as SparklesIcon, ShieldCheck, Apple, Smart
 import { Spotlight } from "@/components/ui/spotlight";
 import { VerticalCutReveal } from "@/components/ui/vertical-cut-reveal";
 import { ContainerScroll } from "@/components/ui/container-scroll-animation";
+import { ShaderAnimation } from "@/components/ui/shader-animation";
 import { Features } from "@/components/sections/Features";
 import { SpotMap } from "@/components/sections/SpotMap";
 import { Pricing } from "@/components/sections/Pricing";
@@ -28,28 +29,41 @@ export default function Page() {
             <a href="/dashboard" className="hover:text-white transition-colors">Dashboard</a>
             <a href="#faq"      className="hover:text-white transition-colors">FAQ</a>
           </nav>
-          <a
-            href="#pricing"
-            className="inline-flex items-center gap-1 bg-gradient-to-r from-spotter-orange to-spotter-red text-white text-sm font-semibold px-4 py-2 rounded-lg shadow-lg shadow-spotter-orange/20 hover:brightness-110 transition"
-          >
-            Start free
-            <ArrowRight className="w-4 h-4" />
-          </a>
+          <div className="flex items-center gap-2">
+            <a
+              href="/signin"
+              className="hidden md:inline-flex items-center gap-1 text-sm text-zinc-300 hover:text-white px-3 py-2 transition"
+            >
+              Sign in
+            </a>
+            <a
+              href="/scan"
+              className="inline-flex items-center gap-1 bg-gradient-to-r from-spotter-cyan to-spotter-violet text-white text-sm font-semibold px-4 py-2 rounded-lg shadow-lg shadow-spotter-cyan/20 hover:brightness-110 transition"
+            >
+              Start free
+              <ArrowRight className="w-4 h-4" />
+            </a>
+          </div>
         </div>
       </header>
 
       {/* ─────────── Hero ─────────── */}
-      <section className="relative min-h-screen pt-32 pb-20 flex items-center justify-center overflow-hidden">
-        <Spotlight className="-top-40 left-0 md:left-60 md:-top-20" fill="#FF7A2E" />
+      <section className="relative min-h-screen pt-32 pb-20 flex items-center justify-center overflow-hidden bg-black">
+        {/* ANIMATED SHADER BACKGROUND — cyan/violet plasma lines */}
+        <div className="shader-hero-bg">
+          <ShaderAnimation />
+        </div>
 
-        {/* radial glow */}
+        <Spotlight className="-top-40 left-0 md:left-60 md:-top-20" fill="#22D3EE" />
+
+        {/* extra cyan + violet radial blooms */}
         <div
           aria-hidden
           className="absolute inset-0 -z-0 pointer-events-none"
           style={{
             background:
-              "radial-gradient(ellipse 60% 50% at 50% -10%, rgba(255,122,46,0.18), transparent 70%)," +
-              "radial-gradient(ellipse 60% 50% at 50% 100%, rgba(255,61,90,0.10), transparent 70%)",
+              "radial-gradient(ellipse 60% 50% at 50% -10%, rgba(34,211,238,0.22), transparent 70%)," +
+              "radial-gradient(ellipse 60% 50% at 50% 100%, rgba(168,85,247,0.16), transparent 70%)",
           }}
         />
 
@@ -180,13 +194,13 @@ export default function Page() {
               <div className="text-xs uppercase tracking-widest text-spotter-mute mb-2">Market value</div>
               <svg viewBox="0 0 300 80" className="w-full h-16 mb-4">
                 <path d="M0,70 C50,60 100,40 150,30 C200,20 250,10 300,5"
-                      fill="none" stroke="#FF7A2E" strokeWidth="2" />
+                      fill="none" stroke="#22D3EE" strokeWidth="2" />
                 <path d="M0,70 C50,60 100,40 150,30 C200,20 250,10 300,5 L300,80 L0,80 Z"
                       fill="url(#g1)" />
                 <defs>
                   <linearGradient id="g1" x1="0" x2="0" y1="0" y2="1">
-                    <stop offset="0" stopColor="#FF7A2E" stopOpacity="0.4" />
-                    <stop offset="1" stopColor="#FF7A2E" stopOpacity="0" />
+                    <stop offset="0" stopColor="#22D3EE" stopOpacity="0.4" />
+                    <stop offset="1" stopColor="#A855F7" stopOpacity="0" />
                   </linearGradient>
                 </defs>
               </svg>

@@ -8,12 +8,19 @@ const config: Config = {
     extend: {
       colors: {
         spotter: {
-          orange: "#FF7A2E",
-          red:    "#FF3D5A",
-          ink:    "#0A0A0F",
-          panel:  "#13131A",
-          line:   "#1F1F28",
+          // Repurposed names kept for compatibility — values now cyan + violet
+          // Premium electric palette to stand apart from competitors.
+          orange: "#22D3EE",   // cyan-400 (was warm orange)
+          red:    "#A855F7",   // violet-500 (was hot red)
+          ink:    "#05050B",   // deeper black for shader contrast
+          panel:  "#0E0E18",   // panel slightly blue-shifted
+          line:   "#1A1A28",
           mute:   "#8A8A95",
+          // New semantic tokens (use these in new code)
+          cyan:   "#22D3EE",
+          violet: "#A855F7",
+          accent: "#7DD3FC",   // sky-300 for hover glows
+          glow:   "#06B6D4",   // cyan-500 for strong accents
         },
       },
       fontFamily: { sans: ["Inter", "system-ui", "sans-serif"] },

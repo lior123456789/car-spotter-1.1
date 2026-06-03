@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Camera,
@@ -13,9 +14,11 @@ import {
   X,
   Loader2,
   ImageIcon,
-  Check,
   Lock,
+  Check,
+  Zap,
 } from "lucide-react";
+import { useAuth } from "@/components/AuthProvider";
 
 type ScanResult = {
   make: string;
@@ -139,18 +142,20 @@ const POOL: ScanResult[] = [
 
 const FREE_LIMIT = 3;
 
-async function fetchUsage(): Promise<{ used: number; remaining: number; plan: string }> {
+async function fetchUsage(): Promise<{ used: number; remaining: number; plan: string; localhost: boolean; claudeEnabled: boolean }> {
   try {
     const res = await fetch("/api/usage", { cache: "no-store" });
-    if (!res.ok) return { used: 0, remaining: FREE_LIMIT, plan: "free" };
+    if (!res.ok) return { used: 0, remaining: FREE_LIMIT, plan: "free", localhost: false, claudeEnabled: false };
     const data = await res.json();
     return {
       used: data.freeScansUsed ?? 0,
       remaining: data.freeScansRemaining ?? FREE_LIMIT,
       plan: data.plan ?? "free",
+      localhost: !!data.localhost,
+      claudeEnabled: !!data.claudeEnabled,
     };
   } catch {
-    return { used: 0, remaining: FREE_LIMIT, plan: "free" };
+    return { used: 0, remaining: FREE_LIMIT, plan: "free", localhost: false, claudeEnabled: false };
   }
 }
 
@@ -176,8 +181,13 @@ async function urlToDataUrl(url: string): Promise<{ dataUrl: string; mimeType: s
 }
 
 export default function ScanPage() {
+  const router = useRouter();
+  const { user, loading: authLoading, configured } = useAuth();
+
   const [used, setUsed] = useState(0);
   const [plan, setPlan] = useState<string>("free");
+  const [localhost, setLocalhost] = useState(false);
+  const [claudeEnabled, setClaudeEnabled] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [progress, setProgress] = useState(0);
   const [preview, setPreview] = useState<string | null>(null);
@@ -185,12 +195,21 @@ export default function ScanPage() {
   const [paywall, setPaywall] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
+  // Gate: require login (skipped on localhost where everything is unlocked)
   useEffect(() => {
-    fetchUsage().then((u) => {
+    if (authLoading) return;
+    fetchUsage().then((u: any) => {
       setUsed(u.used);
       setPlan(u.plan);
+      setLocalhost(!!u.localhost);
+      setClaudeEnabled(!!u.claudeEnabled);
+      // If Firebase is configured AND we're not on localhost AND no user,
+      // redirect to sign-in. Otherwise let them through (localhost / no-firebase = open).
+      if (configured && !u.localhost && !user) {
+        router.replace("/signin?next=/scan");
+      }
     });
-  }, []);
+  }, [authLoading, user, configured, router]);
 
   const remaining = plan !== "free" ? Infinity : Math.max(0, FREE_LIMIT - used);
 
@@ -310,7 +329,23 @@ export default function ScanPage() {
           </div>
 
           <div className="flex items-center gap-3">
-            {plan === "free" ? (
+            {localhost && (
+              <div className="hidden md:inline-flex items-center gap-1.5 text-[10px] px-2.5 py-1 rounded-full border border-emerald-500/40 bg-emerald-500/10 text-emerald-300 font-semibold uppercase tracking-widest">
+                <Zap className="w-3 h-3" />
+                Dev · All features
+              </div>
+            )}
+            {claudeEnabled && (
+              <div className="hidden md:inline-flex items-center gap-1.5 text-[10px] px-2.5 py-1 rounded-full border border-spotter-cyan/40 bg-spotter-cyan/10 text-spotter-cyan font-semibold uppercase tracking-widest">
+                <Sparkles className="w-3 h-3" />
+                Claude live
+              </div>
+            )}
+            {localhost ? (
+              <div className="text-xs px-3 py-1.5 rounded-full border border-spotter-violet/40 bg-spotter-violet/10 text-white font-semibold capitalize">
+                Concours · unlimited
+              </div>
+            ) : plan === "free" ? (
               <div className="text-xs px-3 py-1.5 rounded-full border border-spotter-line bg-spotter-panel/60">
                 <span className="text-spotter-mute">Free scans · </span>
                 <span className="font-semibold text-white">{remaining}</span>
