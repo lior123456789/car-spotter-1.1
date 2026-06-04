@@ -20,6 +20,8 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/components/AuthProvider";
 import { getUserProfile } from "@/lib/firebase";
+import { ScanResultMap } from "@/components/ScanResultMap";
+import { MarketValueChart } from "@/components/MarketValueChart";
 
 type ScanResult = {
   make: string;
@@ -683,24 +685,49 @@ export default function ScanPage() {
                     </div>
                   )}
 
-                  <div className="mt-6 flex flex-wrap gap-3">
-                    <button
-                      onClick={tryAgain}
-                      className="inline-flex items-center gap-2 bg-gradient-to-r from-spotter-cyan to-spotter-violet text-white font-semibold px-5 py-3 rounded-xl hover:brightness-110 transition text-sm"
+                  {/* Market Value chart */}
+                  <MarketValueChart
+                    valueRangeLow={(result as any).valueRangeLow}
+                    valueRangeHigh={(result as any).valueRangeHigh}
+                    msrp={result.msrp}
+                    year={result.year}
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* ─── Where-to-spot map (shown after every result) ─── */}
+            {result && (
+              <ScanResultMap
+                make={result.make}
+                model={result.model}
+                category={result.category}
+              />
+            )}
+
+            <AnimatePresence>
+              {result && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mt-6 flex flex-wrap gap-3"
+                >
+                  <button
+                    onClick={tryAgain}
+                    className="inline-flex items-center gap-2 bg-gradient-to-r from-spotter-cyan to-spotter-violet text-white font-semibold px-5 py-3 rounded-xl hover:brightness-110 transition text-sm"
+                  >
+                    <ImageIcon className="w-4 h-4" />
+                    Scan another {plan === "free" ? `(${remaining} left)` : ""}
+                  </button>
+                  {plan === "free" && (
+                    <Link
+                      href="/#pricing"
+                      className="inline-flex items-center gap-2 bg-gradient-to-r from-spotter-orange to-spotter-red text-white font-semibold px-5 py-3 rounded-xl shadow-lg shadow-spotter-orange/30 hover:brightness-110 transition text-sm"
                     >
-                      <ImageIcon className="w-4 h-4" />
-                      Scan another {plan === "free" ? `(${remaining} left)` : ""}
-                    </button>
-                    {plan === "free" && (
-                      <Link
-                        href="/#pricing"
-                        className="inline-flex items-center gap-2 bg-gradient-to-r from-spotter-orange to-spotter-red text-white font-semibold px-5 py-3 rounded-xl shadow-lg shadow-spotter-orange/30 hover:brightness-110 transition text-sm"
-                      >
-                        <Crown className="w-4 h-4" />
-                        Unlock unlimited
-                      </Link>
-                    )}
-                  </div>
+                      <Crown className="w-4 h-4" />
+                      Unlock unlimited
+                    </Link>
+                  )}
                 </motion.div>
               )}
             </AnimatePresence>
