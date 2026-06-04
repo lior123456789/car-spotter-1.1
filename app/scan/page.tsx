@@ -19,6 +19,7 @@ import {
   Zap,
 } from "lucide-react";
 import { useAuth } from "@/components/AuthProvider";
+import { getUserProfile } from "@/lib/firebase";
 
 type ScanResult = {
   make: string;
@@ -255,13 +256,22 @@ export default function ScanPage() {
   // Gate: require login (skipped on localhost where everything is unlocked)
   useEffect(() => {
     if (authLoading) return;
-    fetchUsage().then((u: any) => {
+    fetchUsage().then(async (u: any) => {
       setUsed(u.used);
-      setPlan(u.plan);
       setLocalhost(!!u.localhost);
       setClaudeEnabled(!!u.claudeEnabled);
-      // If Firebase is configured AND we're not on localhost AND no user,
-      // redirect to sign-in. Otherwise let them through (localhost / no-firebase = open).
+
+      // Source of truth for plan: Firestore /users/{uid}.plan.
+      // Falls back to /api/usage's cookie-based plan if Firestore lookup fails.
+      let effectivePlan: string = u.plan;
+      if (user?.uid) {
+        try {
+          const profile = await getUserProfile(user.uid);
+          if (profile?.plan) effectivePlan = profile.plan;
+        } catch {}
+      }
+      setPlan(effectivePlan);
+
       if (configured && !u.localhost && !user) {
         router.replace("/signin?next=/scan");
       }
@@ -288,7 +298,7 @@ export default function ScanPage() {
       const res = await fetch("/api/identify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ image: dataUrl, mimeType }),
+        body: JSON.stringify({ image: dataUrl, mimeType, plan }),
       });
 
       if (res.status === 402) {

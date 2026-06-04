@@ -44,8 +44,21 @@ export async function POST(req: NextRequest) {
   const user = await getUser(userId);
   const localhost = isLocalhost(req);
 
+  // Trust the client-supplied plan (sent after Firestore lookup) as the
+  // source of truth for paywall bypass. The client-side AuthProvider only
+  // claims plans the actual Firestore /users/{uid}.plan field returned.
+  // This is the simplest cross-system gluing without a Firebase Admin SDK.
+  // (Future hardening: verify a Firebase ID token instead of trusting the
+  // body claim. For MVP, this works and matches what client UI shows.)
+  const claimedPlan = typeof body === "object" && (body as any).plan;
+  const effectivePlan =
+    claimedPlan === "spotter" || claimedPlan === "collector" || claimedPlan === "concours"
+      ? claimedPlan
+      : user.plan;
+
+  const effectivelyPaid = effectivePlan !== "free";
   // On localhost, every feature is unlocked — no paywall, unlimited scans.
-  if (!localhost && !isPaid(user) && user.freeScansUsed >= FREE_LIMIT) {
+  if (!localhost && !effectivelyPaid && user.freeScansUsed >= FREE_LIMIT) {
     return NextResponse.json(
       {
         error: "paywall",
@@ -78,17 +91,18 @@ export async function POST(req: NextRequest) {
   });
 
   let updated = user;
-  // On localhost we don't burn free scans — count stays at 0.
-  if (!localhost && !isPaid(user)) {
+  // Localhost OR paid (per Firestore-claimed plan) doesn't burn free scans.
+  if (!localhost && !effectivelyPaid) {
     updated = await bumpFreeScans(userId);
   }
 
   return NextResponse.json({
     result,
     user: {
-      plan: localhost ? "concours" : updated.plan,        // localhost simulates top tier
-      freeScansUsed: localhost ? 0 : updated.freeScansUsed,
-      freeScansRemaining: localhost ? Infinity : Math.max(0, FREE_LIMIT - updated.freeScansUsed),
+      plan: localhost ? "concours" : effectivePlan,
+      freeScansUsed: localhost || effectivelyPaid ? 0 : updated.freeScansUsed,
+      freeScansRemaining:
+        localhost || effectivelyPaid ? Infinity : Math.max(0, FREE_LIMIT - updated.freeScansUsed),
       freeLimit: FREE_LIMIT,
       localhost,
       claudeEnabled: !!process.env.ANTHROPIC_API_KEY,
