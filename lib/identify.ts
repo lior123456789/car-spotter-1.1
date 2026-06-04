@@ -1,12 +1,13 @@
 /**
  * Car identification.
- *   - If ANTHROPIC_API_KEY is set: real call to Claude with vision (claude-opus-4-7)
+ *   - If ANTHROPIC_API_KEY is set: real call to Claude vision (claude-opus-4-7)
  *   - Otherwise: returns a randomized mock so the demo still works.
  *
- * Strategy: Claude reasons through the photo step-by-step in
- * <thinking> tags, then emits a strict JSON block. We extract only the
- * JSON from the response. Reasoning happens BEFORE the JSON so the
- * model isn't pressured into immediate guesses.
+ * Reverted to a SIMPLE direct-JSON prompt for reliability. The previous
+ * <thinking>-tags structure was hitting max_tokens before the JSON
+ * block completed, causing extractJson() to return null and the silent
+ * fallback to MOCK_POOL[0] = Ferrari SF90. We trade a bit of
+ * identification rigor for ALWAYS returning real Claude data.
  */
 
 export type IdentifyResult = {
@@ -25,7 +26,6 @@ export type IdentifyResult = {
   thumb?: string;
   confidence?: number;
   source: "claude" | "mock";
-  // Rich enrichment fields (Claude returns these directly)
   torque?: string;
   topSpeed?: string;
   weight?: string;
@@ -46,107 +46,57 @@ function mock(): IdentifyResult {
   return MOCK_POOL[Math.floor(Math.random() * MOCK_POOL.length)];
 }
 
-const SYSTEM_PROMPT = `You are CarSpotter — an expert automotive identifier with deep
-knowledge of every production vehicle from 1900 to today.
+const SYSTEM_PROMPT = `You are CarSpotter — an expert automotive identifier with deep knowledge of every production vehicle.
 
-## METHODOLOGY (follow strictly)
+Identify the car in the photo as PRECISELY as possible. Look at: badge,
+headlights, grille mesh, wheel design, body lines, taillights, mirrors.
+Pin the exact generation and (when possible) the single model year.
 
-You will reason step-by-step in <thinking> tags BEFORE returning JSON. Inside
-the thinking block:
-
-  1. **List visual evidence**:
-     - Badge / emblem (highest-confidence signal — read it if visible)
-     - Headlight shape, DRL signature, beam pattern
-     - Grille geometry, mesh pattern, badge placement
-     - Wheel design + size
-     - Front bumper / splitter
-     - Hood vents / power-dome / clamshell
-     - Side body lines / character creases / fender flares
-     - Mirror cap shape
-     - Taillight pattern + position
-     - Exhaust layout
-     - Roofline (coupe, fastback, GT, targa)
-     - Color, wraps, modifications
-
-  2. **Narrow the candidates** to 2-3 likely make/model/generation matches.
-
-  3. **Pick the most likely** based on the discriminating cue. State which
-     cue tipped the decision.
-
-  4. **Estimate confidence** 0.0-1.0. Be HONEST. If you only see a side
-     profile, do not claim 0.95.
-
-  5. **Lock in year range / trim**. Don't promote a base model to a
-     special edition (GT3 vs GT3 RS, M3 vs M3 CSL) without trim-specific
-     visual evidence (wings, splitters, special wheels, badge).
-
-  6. **PIN THE YEAR AS PRECISELY AS POSSIBLE**. Narrow to a single model
-     year when you can, max 2-3 year range when you genuinely can't.
-     Year-discriminating cues:
-       - Mid-cycle refresh: headlight DRL pattern, bumper, grille mesh
-       - Tail light technology (LED bars, OLED introduction years)
-       - Wheel options appearing in specific years
-       - Trim badge revisions ("S", "S+", "Performance")
-       - License plate region/year indicator (UK letter codes A-Y,
-         German format incl. "20" year cluster, EU country flag)
-       - Era-appropriate body styling cues
-       - Side-marker reflectors (US-spec post-2018, etc.)
-     If you nail it to a single year (e.g. "2023" not "2020–2023"),
-     return just that single year string.
-
-After your thinking block, output exactly one JSON object inside a
-\`\`\`json fenced block with this shape:
+Return ONLY a raw JSON object — no prose, no markdown fences. Schema:
 
 {
   "make": string,
-  "model": string,                  // base model name, no trim noise
-  "year": string,                   // SINGLE year preferred ("2023"). Range only if genuinely uncertain ("2020–2023").
+  "model": string,
+  "year": string,
   "category": "Supercar" | "Hypercar" | "Classic" | "Daily" | "JDM" | "Muscle" | "Luxury" | "SUV" | "Truck",
   "msrp": string,
-  "valueRange": string,             // realistic current market range
+  "valueRange": string,
   "engine": string,
   "horsepower": string,
-  "torque": string | null,
+  "torque": string,
   "zeroToSixty": string,
-  "topSpeed": string | null,
-  "weight": string | null,
+  "topSpeed": string,
+  "weight": string,
   "drivetrain": "AWD" | "RWD" | "FWD" | "4WD",
-  "transmission": string | null,
+  "transmission": string,
   "productionCount": number | null,
-  "rarity": number,                 // 0-10
+  "rarity": number,
   "celebrity": string | null,
-  "funFact": string,                // 1-2 sentences, surprising, factual
+  "funFact": string,
   "recentSale": { "auction": string, "date": string, "price": number } | null,
   "recalls": number | null,
-  "wiki": string,                   // 2-3 sentence deep dive
-  "confidence": number              // 0-1
+  "wiki": string,
+  "confidence": number
 }
 
-Rules:
-- Never invent specs. Return null when unsure.
-- valueRange uses real recent auction comps. Cite a year in funFact if
-  the comp is older than 2 years.
-- If the image does not contain an identifiable car, return:
-  \`\`\`json
-  { "error": "no_car_detected" }
-  \`\`\`
-- Output ONLY the thinking block then the JSON. No extra prose.`;
+If you cannot identify a car, return: {"error":"no_car_detected"}`;
 
 function extractJson(text: string): any | null {
-  // 1. Prefer fenced ```json block
-  const fenced = text.match(/```(?:json)?\s*\n?([\s\S]*?)```/i);
-  if (fenced) {
-    try { return JSON.parse(fenced[1].trim()); } catch {}
-  }
-  // 2. Look for the last top-level { ... } block
-  const lastBrace = text.lastIndexOf("{");
-  const firstBrace = text.indexOf("{");
-  if (firstBrace >= 0 && lastBrace > firstBrace) {
-    const slice = text.slice(firstBrace, lastBrace + text.slice(lastBrace).indexOf("}") + 1);
-    try { return JSON.parse(slice); } catch {}
-  }
-  // 3. Raw JSON
   try { return JSON.parse(text.trim()); } catch {}
+  const fenced = text.match(/```(?:json)?\s*\n?([\s\S]*?)```/i);
+  if (fenced) { try { return JSON.parse(fenced[1].trim()); } catch {} }
+  const start = text.indexOf("{");
+  if (start === -1) return null;
+  let depth = 0;
+  for (let i = start; i < text.length; i++) {
+    if (text[i] === "{") depth++;
+    else if (text[i] === "}") {
+      depth--;
+      if (depth === 0) {
+        try { return JSON.parse(text.slice(start, i + 1)); } catch { break; }
+      }
+    }
+  }
   return null;
 }
 
@@ -162,10 +112,8 @@ export async function identifyCar(
 
     const message = await client.messages.create({
       model: "claude-opus-4-7",
-      max_tokens: 3000,         // room for both thinking + JSON
-      // NOTE: claude-opus-4-7 does NOT accept the `temperature` parameter.
-      // Adding it returns HTTP 400 "temperature is deprecated for this
-      // model" → identification falls back to mock. Do not re-add.
+      max_tokens: 2000,
+      // claude-opus-4-7 does NOT accept `temperature`. Do not re-add.
       system: SYSTEM_PROMPT,
       messages: [
         {
@@ -179,22 +127,22 @@ export async function identifyCar(
                 data: imageBase64,
               },
             },
-            {
-              type: "text",
-              text: "Identify this car. Think step by step in <thinking> tags first, then output the JSON.",
-            },
+            { type: "text", text: "Identify this car. Return ONLY the JSON object — no other text." },
           ],
         },
       ],
     });
 
     const textBlock = message.content.find((b) => b.type === "text");
-    if (!textBlock || textBlock.type !== "text") return mock();
+    if (!textBlock || textBlock.type !== "text") {
+      console.error("[identifyCar] No text block in response");
+      return mock();
+    }
     const raw = textBlock.text;
 
     const parsed = extractJson(raw);
     if (!parsed) {
-      console.error("[identifyCar] No JSON in response:", raw.slice(0, 300));
+      console.error("[identifyCar] No JSON extractable from:", raw.slice(0, 500));
       return mock();
     }
 
@@ -227,8 +175,8 @@ export async function identifyCar(
       wiki: parsed.wiki ? String(parsed.wiki) : undefined,
       source: "claude",
     };
-  } catch (err) {
-    console.error("[identifyCar] Claude call failed:", err);
+  } catch (err: any) {
+    console.error("[identifyCar] Claude call failed:", err?.message ?? err);
     return mock();
   }
 }
