@@ -59,9 +59,9 @@ export function SpotMapInner() {
           <MapClusterLayer
             data={filteredFeatures}
             clusterRadius={50}
-            clusterColors={["#FF7A2E", "#FF3D5A", "#A855F7"]}
+            clusterColors={["#22D3EE", "#A855F7", "#06B6D4"]}
             clusterThresholds={[5, 20]}
-            pointColor="#FF7A2E"
+            pointColor="#22D3EE"
             onPointClick={(feature) => {
               setSelected(feature.properties as Spot);
             }}
