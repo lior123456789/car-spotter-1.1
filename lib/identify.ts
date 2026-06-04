@@ -80,13 +80,27 @@ the thinking block:
      special edition (GT3 vs GT3 RS, M3 vs M3 CSL) without trim-specific
      visual evidence (wings, splitters, special wheels, badge).
 
+  6. **PIN THE YEAR AS PRECISELY AS POSSIBLE**. Narrow to a single model
+     year when you can, max 2-3 year range when you genuinely can't.
+     Year-discriminating cues:
+       - Mid-cycle refresh: headlight DRL pattern, bumper, grille mesh
+       - Tail light technology (LED bars, OLED introduction years)
+       - Wheel options appearing in specific years
+       - Trim badge revisions ("S", "S+", "Performance")
+       - License plate region/year indicator (UK letter codes A-Y,
+         German format incl. "20" year cluster, EU country flag)
+       - Era-appropriate body styling cues
+       - Side-marker reflectors (US-spec post-2018, etc.)
+     If you nail it to a single year (e.g. "2023" not "2020–2023"),
+     return just that single year string.
+
 After your thinking block, output exactly one JSON object inside a
 \`\`\`json fenced block with this shape:
 
 {
   "make": string,
   "model": string,                  // base model name, no trim noise
-  "year": string,                   // e.g. "2020–2023" or "1995"
+  "year": string,                   // SINGLE year preferred ("2023"). Range only if genuinely uncertain ("2020–2023").
   "category": "Supercar" | "Hypercar" | "Classic" | "Daily" | "JDM" | "Muscle" | "Luxury" | "SUV" | "Truck",
   "msrp": string,
   "valueRange": string,             // realistic current market range
