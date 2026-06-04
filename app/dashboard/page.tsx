@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { PostCheckoutSync } from "@/components/PostCheckoutSync";
 import { RecoverSubscription } from "@/components/RecoverSubscription";
+import { DashboardMap } from "@/components/DashboardMap";
 import { useAuth } from "@/components/AuthProvider";
 import { subscribeToMyScans, aggregateMyStats, type UserScan } from "@/lib/firestoreClient";
 import { getUserProfile, type UserProfile } from "@/lib/firebase";
@@ -153,6 +154,9 @@ export default function DashboardPage() {
             sub={planLabel === "free" ? "3 free scans" : "unlimited"}
           />
         </div>
+
+        {/* Personal Spot Map (paid users) or upsell card (free users) */}
+        <DashboardMap scans={scans} plan={planLabel} />
 
         {scans.length === 0 ? (
           <EmptyState />

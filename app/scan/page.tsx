@@ -35,6 +35,16 @@ type ScanResult = {
   celebrity?: string;
   funFact: string;
   thumb: string;
+  // Enrichment — populated when Claude returns them
+  torque?: string;
+  topSpeed?: string;
+  weight?: string;
+  drivetrain?: string;
+  transmission?: string;
+  productionCount?: number;
+  recentSale?: { auction: string; date: string; price: number };
+  recalls?: number;
+  wiki?: string;
 };
 
 // Realistic mock identifications, picked at random per scan.
@@ -326,6 +336,16 @@ export default function ScanPage() {
         celebrity: r.celebrity,
         funFact: r.funFact,
         thumb: r.thumb ?? dataUrl,
+        // Pass through everything Claude returned
+        torque: (r as any).torque,
+        topSpeed: (r as any).topSpeed,
+        weight: (r as any).weight,
+        drivetrain: (r as any).drivetrain,
+        transmission: (r as any).transmission,
+        productionCount: (r as any).productionCount,
+        recentSale: (r as any).recentSale,
+        recalls: (r as any).recalls,
+        wiki: (r as any).wiki,
       });
       setUsed(data.user?.freeScansUsed ?? used + 1);
       setPlan(data.user?.plan ?? plan);
@@ -602,7 +622,15 @@ export default function ScanPage() {
                     <Stat label="Value today"    value={result.valueRange} accent />
                     <Stat label="Engine"         value={result.engine} />
                     <Stat label="Horsepower"     value={result.horsepower} />
+                    {result.torque       && <Stat label="Torque"       value={result.torque} />}
                     <Stat label="0–60 mph"       value={result.zeroToSixty} />
+                    {result.topSpeed     && <Stat label="Top speed"    value={result.topSpeed} />}
+                    {result.weight       && <Stat label="Weight"       value={result.weight} />}
+                    {result.drivetrain   && <Stat label="Drivetrain"   value={result.drivetrain} />}
+                    {result.transmission && <Stat label="Transmission" value={result.transmission} />}
+                    {typeof result.productionCount === "number" && (
+                      <Stat label="Production"   value={result.productionCount.toLocaleString()} accent />
+                    )}
                     <Stat label="Rarity"         value={`${result.rarity}/10`} bar={result.rarity * 10} />
                   </div>
 
@@ -615,28 +643,63 @@ export default function ScanPage() {
                     </div>
                   )}
 
+                  {result.recentSale && (
+                    <div className="mt-4 rounded-xl bg-spotter-cyan/10 border border-spotter-cyan/20 p-3">
+                      <div className="text-[10px] uppercase tracking-widest text-spotter-cyan mb-1 flex items-center gap-1.5">
+                        <Trophy className="w-3 h-3" /> Recent auction sale
+                      </div>
+                      <div className="flex items-baseline justify-between">
+                        <div className="text-xl font-bold gradient-text">
+                          ${result.recentSale.price.toLocaleString()}
+                        </div>
+                        <div className="text-xs text-spotter-mute">
+                          {result.recentSale.auction} · {result.recentSale.date}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="mt-4 rounded-xl bg-spotter-ink border border-spotter-line p-4">
-                    <div className="text-[10px] uppercase tracking-widest text-spotter-orange mb-1.5 flex items-center gap-1.5">
+                    <div className="text-[10px] uppercase tracking-widest text-spotter-cyan mb-1.5 flex items-center gap-1.5">
                       <Sparkles className="w-3 h-3" /> Did you know
                     </div>
                     <p className="text-sm text-zinc-200 leading-relaxed">{result.funFact}</p>
                   </div>
 
+                  {result.wiki && (
+                    <div className="mt-4 rounded-xl bg-spotter-ink border border-spotter-line p-4">
+                      <div className="text-[10px] uppercase tracking-widest text-spotter-violet mb-1.5">
+                        Deep dive
+                      </div>
+                      <p className="text-sm text-zinc-300 leading-relaxed">{result.wiki}</p>
+                    </div>
+                  )}
+
+                  {typeof result.recalls === "number" && result.recalls > 0 && (
+                    <div className="mt-4 rounded-xl bg-rose-500/10 border border-rose-500/20 p-3">
+                      <div className="text-xs text-rose-300">
+                        ⚠ {result.recalls} active recall{result.recalls > 1 ? "s" : ""} on record
+                      </div>
+                    </div>
+                  )}
+
                   <div className="mt-6 flex flex-wrap gap-3">
                     <button
                       onClick={tryAgain}
-                      className="inline-flex items-center gap-2 bg-white text-spotter-ink font-semibold px-5 py-3 rounded-xl hover:bg-white/90 transition text-sm"
+                      className="inline-flex items-center gap-2 bg-gradient-to-r from-spotter-cyan to-spotter-violet text-white font-semibold px-5 py-3 rounded-xl hover:brightness-110 transition text-sm"
                     >
                       <ImageIcon className="w-4 h-4" />
                       Scan another {plan === "free" ? `(${remaining} left)` : ""}
                     </button>
-                    <Link
-                      href="/#pricing"
-                      className="inline-flex items-center gap-2 bg-gradient-to-r from-spotter-orange to-spotter-red text-white font-semibold px-5 py-3 rounded-xl shadow-lg shadow-spotter-orange/30 hover:brightness-110 transition text-sm"
-                    >
-                      <Crown className="w-4 h-4" />
-                      Unlock unlimited
-                    </Link>
+                    {plan === "free" && (
+                      <Link
+                        href="/#pricing"
+                        className="inline-flex items-center gap-2 bg-gradient-to-r from-spotter-orange to-spotter-red text-white font-semibold px-5 py-3 rounded-xl shadow-lg shadow-spotter-orange/30 hover:brightness-110 transition text-sm"
+                      >
+                        <Crown className="w-4 h-4" />
+                        Unlock unlimited
+                      </Link>
+                    )}
                   </div>
                 </motion.div>
               )}
