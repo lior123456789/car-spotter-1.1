@@ -1,0 +1,31 @@
+// CarSpotter Firebase Storage rules
+//
+// Paste into Firebase Console → Storage → Rules tab → Publish.
+// Locks photo uploads to the post owner's namespace and caps size.
+
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // ── /posts/{userId}/{postId}.jpg — feed photos ──
+    match /posts/{userId}/{photoId} {
+      // Everyone signed in can read (feed images).
+      allow read: if request.auth != null;
+      // Only the owner can write, must be image, max 10MB.
+      allow write: if request.auth != null
+        && request.auth.uid == userId
+        && request.resource.size < 10 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+    }
+
+    // ── /avatars/{userId}/{filename} — profile photos ──
+    match /avatars/{userId}/{filename} {
+      allow read: if true;
+      allow write: if request.auth != null
+        && request.auth.uid == userId
+        && request.resource.size < 2 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+    }
+  }
+}

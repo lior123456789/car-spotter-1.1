@@ -184,9 +184,11 @@ async function optimizeImage(file: File): Promise<{ dataUrl: string; mimeType: s
     reader.readAsDataURL(file);
   });
 
-  // Skip resize if file is already small + visually sharp
-  const MAX_DIM = 2048;
-  const TARGET_QUALITY = 0.92;
+  // Bigger + higher quality = much better Claude vision accuracy.
+  // Empirically: 3072px @ 0.95 quality lands well under the 5MB API
+  // ceiling for typical phone shots while preserving badge / grille detail.
+  const MAX_DIM = 3072;
+  const TARGET_QUALITY = 0.95;
 
   try {
     const img = await new Promise<HTMLImageElement>((resolve, reject) => {
