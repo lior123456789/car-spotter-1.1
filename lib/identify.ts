@@ -149,7 +149,9 @@ export async function identifyCar(
     const message = await client.messages.create({
       model: "claude-opus-4-7",
       max_tokens: 3000,         // room for both thinking + JSON
-      temperature: 0.1,         // tight: car ID needs precision, not creativity
+      // NOTE: claude-opus-4-7 does NOT accept the `temperature` parameter.
+      // Adding it returns HTTP 400 "temperature is deprecated for this
+      // model" → identification falls back to mock. Do not re-add.
       system: SYSTEM_PROMPT,
       messages: [
         {
