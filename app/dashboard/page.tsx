@@ -16,6 +16,7 @@ import {
   Activity,
 } from "lucide-react";
 import { PostCheckoutSync } from "@/components/PostCheckoutSync";
+import { RecoverSubscription } from "@/components/RecoverSubscription";
 import { useAuth } from "@/components/AuthProvider";
 import { subscribeToMyScans, aggregateMyStats, type UserScan } from "@/lib/firestoreClient";
 import { getUserProfile, type UserProfile } from "@/lib/firebase";
@@ -117,6 +118,8 @@ export default function DashboardPage() {
       </header>
 
       <div className="max-w-7xl mx-auto px-5 py-10">
+        {planLabel === "free" && <RecoverSubscription />}
+
         <div className="mb-8">
           <p className="text-xs uppercase tracking-[0.24em] text-spotter-cyan mb-2">Your activity</p>
           <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">
