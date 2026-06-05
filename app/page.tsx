@@ -232,9 +232,10 @@ export default function Page() {
           <span className="font-semibold text-zinc-300">CarSpotter</span>
         </div>
         <div className="flex justify-center gap-6 mb-3">
-          <a href="#" className="hover:text-white">Privacy</a>
-          <a href="#" className="hover:text-white">Terms</a>
-          <a href="mailto:hi@carsspotter.app" className="hover:text-white">Contact</a>
+          <a href="/privacy" className="hover:text-white">Privacy</a>
+          <a href="/terms" className="hover:text-white">Terms</a>
+          <a href="/support" className="hover:text-white">Support</a>
+          <a href="mailto:paul@nemapp.com" className="hover:text-white">Contact</a>
         </div>
         <p>© 2026 CarSpotter. Made by people who once stood on a curb arguing whether a 911 was a 996.2 or a 997.1.</p>
       </footer>
