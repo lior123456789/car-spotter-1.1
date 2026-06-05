@@ -126,7 +126,10 @@ export async function identifyCar(
     const resp = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
-        "x-api-key": process.env.ANTHROPIC_API_KEY!,
+        // Strip non-printable-ASCII — Render's env editor injected unicode
+        // (char 9474 = ─) into the pasted key, crashing fetch's ByteString
+        // conversion. This sanitize fixes prod without re-pasting the key.
+        "x-api-key": process.env.ANTHROPIC_API_KEY!.replace(/[^\x20-\x7e]/g, "").trim(),
         "anthropic-version": "2023-06-01",
         "content-type": "application/json",
       },
