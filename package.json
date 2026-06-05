@@ -1,6 +1,6 @@
 {
   "name": "carsspotter-landing",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -8,7 +8,9 @@
     "start": "next start -p ${PORT:-3000}",
     "lint": "next lint"
   },
-  "engines": { "node": ">=18.17.0" },
+  "engines": {
+    "node": ">=18.17.0"
+  },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.32.1",
     "@number-flow/react": "^0.5.10",

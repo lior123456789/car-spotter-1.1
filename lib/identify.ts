@@ -37,13 +37,27 @@ export type IdentifyResult = {
   wiki?: string;
 };
 
-const MOCK_POOL: IdentifyResult[] = [
-  { make: "Ferrari", model: "SF90 Stradale", year: "2020–2023", category: "Supercar", msrp: "$507,000", valueRange: "$550k – $750k", engine: "4.0L Twin-Turbo V8 PHEV", horsepower: "986 hp", zeroToSixty: "2.5 s", rarity: 8, celebrity: "David Beckham", funFact: "First production Ferrari to use a plug-in hybrid powertrain — the V8 alone makes 769 hp.", source: "mock" },
-  { make: "Porsche", model: "911 GT3 RS (992)", year: "2023–2024", category: "Supercar", msrp: "$241,300", valueRange: "$290k – $360k", engine: "4.0L NA Flat-Six", horsepower: "518 hp", zeroToSixty: "3.0 s", rarity: 7, funFact: "DRS system borrowed from F1 — the rear wing can flatten itself mid-corner to keep top speed up.", source: "mock" },
-];
-
+/**
+ * Honest fallback: when Claude can't be reached or parsed, return a
+ * clearly-labeled "couldn't identify" payload instead of a fake car.
+ * The UI can show "Identification failed — try again" instead of
+ * pretending every photo is a Ferrari SF90.
+ */
 function mock(): IdentifyResult {
-  return MOCK_POOL[Math.floor(Math.random() * MOCK_POOL.length)];
+  return {
+    make: "Couldn't identify",
+    model: "Try another photo or check connection",
+    year: "—",
+    category: "Daily",
+    msrp: "—",
+    valueRange: "—",
+    engine: "—",
+    horsepower: "—",
+    zeroToSixty: "—",
+    rarity: 0,
+    funFact: "We couldn't reach the AI vision model right now. This usually clears up in a few seconds — please scan again.",
+    source: "mock",
+  };
 }
 
 const SYSTEM_PROMPT = `You are CarSpotter — an expert automotive identifier with deep knowledge of every production vehicle.
