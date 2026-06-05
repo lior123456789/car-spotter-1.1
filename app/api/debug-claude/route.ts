@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
+// FETCH-BASED VERSION — was using SDK which crashed on Render Node v26
 
 /**
  * Debug endpoint that bypasses lib/identify.ts and calls Claude directly.
@@ -43,27 +44,44 @@ async function runTest(label: string, image?: string, mimeType: string = "image/
         .then((buf) => Buffer.from(buf).toString("base64"));
 
   try {
-    const Anthropic = (await import("@anthropic-ai/sdk")).default;
-    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-
     const start = Date.now();
-    const message = await client.messages.create({
-      model: "claude-opus-4-7",
-      max_tokens: 2000,
-      system: "You are an expert car identifier. Return ONLY a JSON object: {\"make\":\"...\",\"model\":\"...\",\"year\":\"...\"}",
-      messages: [
-        {
-          role: "user",
-          content: [
-            { type: "image", source: { type: "base64", media_type: mimeType as any, data: base64 } },
-            { type: "text", text: "Identify this car. JSON only." },
-          ],
-        },
-      ],
+    const resp = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "x-api-key": process.env.ANTHROPIC_API_KEY!,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "claude-opus-4-7",
+        max_tokens: 2000,
+        system: "Return ONLY a JSON object: {\"make\":\"...\",\"model\":\"...\",\"year\":\"...\"}",
+        messages: [
+          {
+            role: "user",
+            content: [
+              { type: "image", source: { type: "base64", media_type: mimeType, data: base64 } },
+              { type: "text", text: "Identify this car. JSON only." },
+            ],
+          },
+        ],
+      }),
+      signal: AbortSignal.timeout(25_000),
     });
     const elapsedMs = Date.now() - start;
+    const bodyText = await resp.text();
+    let message: any = null;
+    try { message = JSON.parse(bodyText); } catch {}
 
-    const textBlock = message.content.find((b) => b.type === "text");
+    if (!resp.ok) {
+      return NextResponse.json({
+        env, label, elapsedMs, httpStatus: resp.status,
+        rawBody: bodyText.slice(0, 1500),
+        parsedBody: message,
+      });
+    }
+
+    const textBlock = message?.content?.find?.((b: any) => b.type === "text");
     const rawText = textBlock?.type === "text" ? textBlock.text : null;
 
     let parsed: any = null;
@@ -84,9 +102,9 @@ async function runTest(label: string, image?: string, mimeType: string = "image/
       env,
       label,
       elapsedMs,
-      model: message.model,
-      stop_reason: message.stop_reason,
-      usage: message.usage,
+      model: message?.model,
+      stop_reason: message?.stop_reason,
+      usage: message?.usage,
       rawText,
       parsed,
       parseError,
