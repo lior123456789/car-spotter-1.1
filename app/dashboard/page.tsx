@@ -15,12 +15,12 @@ import {
   Trophy,
   Activity,
 } from "lucide-react";
-import { PostCheckoutSync } from "@/components/PostCheckoutSync";
-import { RecoverSubscription } from "@/components/RecoverSubscription";
-import { DashboardMap } from "@/components/DashboardMap";
-import { useAuth } from "@/components/AuthProvider";
-import { subscribeToMyScans, aggregateMyStats, type UserScan } from "@/lib/firestoreClient";
-import { getUserProfile, type UserProfile } from "@/lib/firebase";
+import { PostCheckoutSync } from "../../components/PostCheckoutSync";
+import { RecoverSubscription } from "../../components/RecoverSubscription";
+import { DashboardMap } from "../../components/DashboardMap";
+import { useAuth } from "../../components/AuthProvider";
+import { subscribeToMyScans, aggregateMyStats, type UserScan } from "../../lib/firestoreClient";
+import { getUserProfile, type UserProfile } from "../../lib/firebase";
 
 function formatMoney(n: number) {
   if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(2)}M`;
