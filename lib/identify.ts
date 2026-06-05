@@ -121,6 +121,13 @@ export async function identifyCar(
   imageBase64: string,
   mimeType: string = "image/jpeg",
 ): Promise<IdentifyResult> {
+  // ── PRIMARY: GPT-4o vision ──
+  if (process.env.OPENAI_API_KEY) {
+    const gpt = await identifyCarWithGPT(imageBase64, mimeType);
+    if (gpt && gpt.make !== "Couldn't identify") return gpt;
+  }
+
+  // ── FALLBACK: Claude. If no Claude key either, return honest mock. ──
   if (!process.env.ANTHROPIC_API_KEY) return mock();
 
   try {
