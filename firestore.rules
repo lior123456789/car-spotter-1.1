@@ -54,8 +54,8 @@ service cloud.firestore {
 
     // ── /posts/{postId} — global social feed ──
     match /posts/{postId} {
-      // Everyone signed in can read the feed.
-      allow read: if request.auth != null;
+      // PUBLIC read — anyone (signed-in or not) can see the feed.
+      allow read: if true;
 
       // Create: must be signed in, must set userId to themselves,
       // must include the required fields.
