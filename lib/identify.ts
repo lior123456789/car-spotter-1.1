@@ -114,14 +114,23 @@ function extractJson(text: string): any | null {
   return null;
 }
 
-// ── GPT-4o vision is now the PRIMARY identifier. Claude is the fallback. ──
+// ── PRIMARY: Multi-model ensemble (GPT-4o + Claude with tiebreaker) ──
 import { identifyCarWithGPT } from "./identifyGPT";
+import { identifyCarEnsemble } from "./identifyEnsemble";
 
 export async function identifyCar(
   imageBase64: string,
   mimeType: string = "image/jpeg",
 ): Promise<IdentifyResult> {
-  // ── PRIMARY: GPT-4o vision ──
+  // ── PRIMARY: Ensemble ──
+  // Runs GPT-4o + Claude in parallel. If they agree → high confidence.
+  // If they disagree → GPT-4o runs a tiebreaker with both candidates.
+  if (process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY) {
+    const ensemble = await identifyCarEnsemble(imageBase64, mimeType);
+    if (ensemble && ensemble.make !== "Couldn't identify") return ensemble;
+  }
+
+  // ── BACKWARDS-COMPAT FALLBACK: single GPT call ──
   if (process.env.OPENAI_API_KEY) {
     const gpt = await identifyCarWithGPT(imageBase64, mimeType);
     if (gpt && gpt.make !== "Couldn't identify") return gpt;
