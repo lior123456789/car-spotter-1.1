@@ -97,5 +97,13 @@ service cloud.firestore {
         && request.resource.data.keys().hasAll(['postId','authorId','reason','status','createdAt']);
       allow read, update, delete: if false;
     }
+
+    // ── /leads/{leadId} — NIGHT DRIVE arcade email capture (/drive funnel) ──
+    // Write-only from the public game funnel. Reviewed in the console.
+    match /leads/{leadId} {
+      allow create: if request.resource.data.email is string
+        && request.resource.data.email.size() < 200;
+      allow read, update, delete: if false;
+    }
   }
 }

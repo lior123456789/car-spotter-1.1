@@ -232,6 +232,7 @@ export default function Page() {
           <span className="font-semibold text-zinc-300">CarSpotter</span>
         </div>
         <div className="flex justify-center gap-6 mb-3">
+          <a href="/drive" className="text-spotter-cyan hover:text-white font-semibold">▶ Night Drive</a>
           <a href="/privacy" className="hover:text-white">Privacy</a>
           <a href="/terms" className="hover:text-white">Terms</a>
           <a href="/support" className="hover:text-white">Support</a>

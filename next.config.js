@@ -5,5 +5,9 @@ const nextConfig = {
   typescript: { ignoreBuildErrors: true },
   eslint:     { ignoreDuringBuilds: true },
   images: { remotePatterns: [{ protocol: "https", hostname: "**" }] },
+  // Clean URL for the NIGHT DRIVE arcade (served from public/drive.html).
+  async rewrites() {
+    return [{ source: "/drive", destination: "/drive.html" }];
+  },
 };
 module.exports = nextConfig;
