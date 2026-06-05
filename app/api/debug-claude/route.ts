@@ -48,7 +48,7 @@ async function runTest(label: string, image?: string, mimeType: string = "image/
     const resp = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
-        "x-api-key": process.env.ANTHROPIC_API_KEY!,
+        "x-api-key": process.env.ANTHROPIC_API_KEY!.replace(/[^\x20-\x7e]/g, "").trim(),
         "anthropic-version": "2023-06-01",
         "content-type": "application/json",
       },
