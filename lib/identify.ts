@@ -114,6 +114,9 @@ function extractJson(text: string): any | null {
   return null;
 }
 
+// ── GPT-4o vision is now the PRIMARY identifier. Claude is the fallback. ──
+import { identifyCarWithGPT } from "./identifyGPT";
+
 export async function identifyCar(
   imageBase64: string,
   mimeType: string = "image/jpeg",
