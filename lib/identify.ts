@@ -107,38 +107,53 @@ export async function identifyCar(
   if (!process.env.ANTHROPIC_API_KEY) return mock();
 
   try {
-    const Anthropic = (await import("@anthropic-ai/sdk")).default;
-    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-
-    const message = await client.messages.create({
-      model: "claude-opus-4-7",
-      max_tokens: 2000,
-      // claude-opus-4-7 does NOT accept `temperature`. Do not re-add.
-      system: SYSTEM_PROMPT,
-      messages: [
-        {
-          role: "user",
-          content: [
-            {
-              type: "image",
-              source: {
-                type: "base64",
-                media_type: mimeType as "image/jpeg" | "image/png" | "image/webp" | "image/gif",
-                data: imageBase64,
+    // Use plain fetch — the @anthropic-ai/sdk throws "Connection error"
+    // on Render's Node v26.3.0 runtime. Plain fetch works there.
+    const resp = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "x-api-key": process.env.ANTHROPIC_API_KEY!,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "claude-opus-4-7",
+        max_tokens: 2000,
+        // claude-opus-4-7 does NOT accept `temperature`. Do not re-add.
+        system: SYSTEM_PROMPT,
+        messages: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "image",
+                source: {
+                  type: "base64",
+                  media_type: mimeType,
+                  data: imageBase64,
+                },
               },
-            },
-            { type: "text", text: "Identify this car. Return ONLY the JSON object — no other text." },
-          ],
-        },
-      ],
+              { type: "text", text: "Identify this car. Return ONLY the JSON object — no other text." },
+            ],
+          },
+        ],
+      }),
+      signal: AbortSignal.timeout(25_000),
     });
 
-    const textBlock = message.content.find((b) => b.type === "text");
+    if (!resp.ok) {
+      const errText = await resp.text();
+      console.error(`[identifyCar] Anthropic HTTP ${resp.status}: ${errText.slice(0, 300)}`);
+      return mock();
+    }
+
+    const message: any = await resp.json();
+    const textBlock = (message.content ?? []).find((b: any) => b.type === "text");
     if (!textBlock || textBlock.type !== "text") {
       console.error("[identifyCar] No text block in response");
       return mock();
     }
-    const raw = textBlock.text;
+    const raw = textBlock.text as string;
 
     const parsed = extractJson(raw);
     if (!parsed) {
