@@ -14,10 +14,12 @@ import {
   Crown,
   Trophy,
   Activity,
+  Sparkles,
 } from "lucide-react";
 import { PostCheckoutSync } from "../../components/PostCheckoutSync";
 import { RecoverSubscription } from "../../components/RecoverSubscription";
 import { DashboardMap } from "../../components/DashboardMap";
+import { AskChat } from "../../components/AskChat";
 import { useAuth } from "../../components/AuthProvider";
 import { subscribeToMyScans, aggregateMyStats, type UserScan } from "../../lib/firestoreClient";
 import { getUserProfile, type UserProfile } from "../../lib/firebase";
@@ -157,6 +159,23 @@ export default function DashboardPage() {
 
         {/* Personal Spot Map (paid users) or upsell card (free users) */}
         <DashboardMap scans={scans} plan={planLabel} />
+
+        {/* CarSpotter AI chat (Collector+) */}
+        <div className="mb-8">
+          <div className="flex items-center gap-2 mb-3">
+            <Sparkles className="w-4 h-4 text-spotter-cyan" />
+            <h2 className="text-lg font-semibold">CarSpotter AI</h2>
+            <span className="text-[10px] font-bold tracking-wider text-spotter-cyan border border-spotter-cyan/30 rounded-full px-2 py-0.5">COLLECTOR</span>
+          </div>
+          {planLabel === "collector" || planLabel === "concours" ? (
+            <AskChat />
+          ) : (
+            <Link href="/#pricing" className="block rounded-2xl border border-spotter-line bg-spotter-panel p-6 text-center hover:border-spotter-cyan/40 transition">
+              <p className="text-white font-semibold mb-1">Ask AI anything about cars</p>
+              <p className="text-sm text-spotter-mute">Unlock the AI car expert with Collector or Concours →</p>
+            </Link>
+          )}
+        </div>
 
         {scans.length === 0 ? (
           <EmptyState />

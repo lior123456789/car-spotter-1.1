@@ -34,7 +34,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "AI chat not configured." }, { status: 503 });
   }
 
-  const carLine = [car.year, car.make, car.model].filter(Boolean).join(" ") || "this car";
+  const carLine = [car.year, car.make, car.model].filter(Boolean).join(" ");
+  const hasCar = Boolean(car.make || car.model);
   const specs = [
     car.msrp && `Original MSRP: ${car.msrp}`,
     car.valueRange && `Value today: ${car.valueRange}`,
@@ -44,11 +45,13 @@ export async function POST(req: Request) {
     typeof car.rarity === "number" && `Rarity: ${car.rarity}/10`,
   ].filter(Boolean).join(" · ");
 
-  const system =
-    `You are CarSpotter's in-app car expert. The user just identified a ${carLine} and wants to learn more about it.` +
-    (specs ? ` Known details — ${specs}.` : "") +
-    ` Answer their questions about this car accurately and conversationally. Keep replies short (2-4 sentences), no markdown headers. ` +
-    `If asked something off-topic, gently steer back to the car. If you're unsure of an exact figure, say so rather than inventing it.`;
+  const system = hasCar
+    ? `You are CarSpotter's car expert. The user just identified a ${carLine} and wants to learn more about it.` +
+      (specs ? ` Known details — ${specs}.` : "") +
+      ` Answer their questions about this car accurately and conversationally. Keep replies short (2-4 sentences), no markdown headers. ` +
+      `If asked something off-topic, gently steer back to the car. If you're unsure of an exact figure, say so rather than inventing it.`
+    : `You are CarSpotter's car expert — a knowledgeable, friendly assistant for anything automotive: makes, models, specs, values, buying advice, history, maintenance. ` +
+      `Answer accurately and conversationally in 2-4 sentences, no markdown headers. If a question isn't about cars, gently steer back. If unsure of an exact figure, say so rather than inventing it.`;
 
   try {
     const resp = await fetch("https://api.anthropic.com/v1/messages", {
