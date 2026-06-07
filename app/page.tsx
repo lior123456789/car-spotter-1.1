@@ -28,6 +28,7 @@ export default function Page() {
             <a href="#features" className="hover:text-white transition-colors">Features</a>
             <a href="/feed"     className="hover:text-white transition-colors">Feed</a>
             <a href="#spotmap"  className="hover:text-white transition-colors">Map</a>
+            <a href="/decoder"  className="hover:text-white transition-colors">Decoder</a>
             <a href="#pricing"  className="hover:text-white transition-colors">Pricing</a>
             <a href="/dashboard" className="hover:text-white transition-colors">Dashboard</a>
             <a href="#faq"      className="hover:text-white transition-colors">FAQ</a>
