@@ -8,7 +8,8 @@ import { SPOTS, type Spot } from "@/lib/spotData";
 const Map               = dynamic(() => import("@/components/ui/mapcn-layer-markers").then((m) => m.Map), { ssr: false });
 const MapPopup          = dynamic(() => import("@/components/ui/mapcn-layer-markers").then((m) => m.MapPopup), { ssr: false });
 const MapControls       = dynamic(() => import("@/components/ui/mapcn-layer-markers").then((m) => m.MapControls), { ssr: false });
-const MapClusterLayer   = dynamic(() => import("@/components/ui/mapcn-layer-markers").then((m) => m.MapClusterLayer), { ssr: false });
+const MapMarker         = dynamic(() => import("@/components/ui/mapcn-layer-markers").then((m) => m.MapMarker), { ssr: false });
+const MarkerContent     = dynamic(() => import("@/components/ui/mapcn-layer-markers").then((m) => m.MarkerContent), { ssr: false });
 
 /**
  * Map shown directly under the scan result card.
@@ -48,15 +49,6 @@ export function ScanResultMap({
   const showFallback = matchingSpots.exact.length === 0 && matchingSpots.related.length === 0;
   const featuresToShow = showFallback ? SPOTS : [...matchingSpots.exact, ...matchingSpots.related.slice(0, 8)];
 
-  const featureCollection = useMemo<GeoJSON.FeatureCollection<GeoJSON.Point, Spot>>(() => ({
-    type: "FeatureCollection",
-    features: featuresToShow.map((s) => ({
-      type: "Feature",
-      geometry: { type: "Point", coordinates: [s.lng, s.lat] },
-      properties: s,
-    })),
-  }), [featuresToShow]);
-
   return (
     <div className="mt-5 rounded-2xl border border-spotter-line bg-spotter-panel/50 overflow-hidden shadow-[0_-13px_180px_rgba(34,211,238,0.18)]">
       <div className="px-5 py-4 border-b border-spotter-line flex items-center justify-between">
@@ -78,15 +70,34 @@ export function ScanResultMap({
       </div>
 
       <div className="h-[420px] w-full relative">
-        <Map theme="dark" center={[0, 30]} zoom={1.3} attributionControl={false}>
-          <MapClusterLayer
-            data={featureCollection}
-            clusterRadius={40}
-            clusterColors={["#22D3EE", "#A855F7", "#06B6D4"]}
-            clusterThresholds={[3, 10]}
-            pointColor="#22D3EE"
-            onPointClick={(feature) => setSelected(feature.properties as Spot)}
-          />
+        <Map theme="dark" center={[0, 30]} zoom={1.4} attributionControl={false}>
+          {featuresToShow.map((s) => {
+            const isExact = matchingSpots.exact.includes(s);
+            return (
+              <MapMarker key={`${s.name}-${s.lat}-${s.lng}`} longitude={s.lng} latitude={s.lat} onClick={() => setSelected(s)}>
+                <MarkerContent>
+                  <button
+                    aria-label={s.name}
+                    className="relative grid place-items-center cursor-pointer"
+                    style={{ width: 22, height: 22 }}
+                  >
+                    <span
+                      className="absolute inset-0 rounded-full animate-ping"
+                      style={{ background: isExact ? "#22D3EE" : "#A855F7", opacity: 0.35 }}
+                    />
+                    <span
+                      className="rounded-full border-2 border-white"
+                      style={{
+                        width: 13, height: 13,
+                        background: isExact ? "#22D3EE" : "#A855F7",
+                        boxShadow: `0 0 12px ${isExact ? "#22D3EE" : "#A855F7"}`,
+                      }}
+                    />
+                  </button>
+                </MarkerContent>
+              </MapMarker>
+            );
+          })}
 
           {selected && (
             <MapPopup
