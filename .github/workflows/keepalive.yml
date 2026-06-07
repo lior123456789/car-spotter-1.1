@@ -1,0 +1,22 @@
+name: Keep Render warm
+
+# Render's free tier spins the service down after ~15 min idle, causing a
+# slow cold-start ("SERVICE WAKING UP") on the next visit. This pings the
+# site every 10 min so it stays awake. Remove this workflow if you upgrade
+# Render to a paid (always-on) instance.
+
+on:
+  schedule:
+    - cron: "*/10 * * * *" # every 10 minutes (UTC)
+  workflow_dispatch: {} # lets you run it manually too
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping carsspotter.com
+        run: |
+          for path in / /decoder /chat; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 90 "https://carsspotter.com${path}" || echo "000")
+            echo "${code}  ${path}"
+          done
