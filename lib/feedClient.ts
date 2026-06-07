@@ -54,6 +54,10 @@ export function subscribeToFeed(
     fbLimit(max),
   );
 
+  // Feed resets daily — only show spots from today (local midnight onward).
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+
   return onSnapshot(q, (snap) => {
     const posts = snap.docs.map((d) => {
       const data = d.data();
@@ -76,7 +80,7 @@ export function subscribeToFeed(
         likedBy: (data.likedBy as string[]) ?? [],
         createdAt: data.createdAt?.toDate?.() ?? new Date(),
       } as FeedPost;
-    });
+    }).filter((p) => p.createdAt >= startOfToday);
     cb(posts);
   });
 }
