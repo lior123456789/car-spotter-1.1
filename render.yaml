@@ -7,7 +7,7 @@ services:
     buildCommand: npm install --legacy-peer-deps && npm run build
     startCommand: npm start
     autoDeploy: true
-    healthCheckPath: /
+    healthCheckPath: /api/health
     envVars:
       - key: NODE_VERSION
         value: 20.11.0
